@@ -12,6 +12,7 @@
 *.ko
 *.obj
 *.elf
+*.s
 
 # Linker output
 *.ilk
