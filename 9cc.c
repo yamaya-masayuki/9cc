@@ -132,16 +132,16 @@ Node *expr() {
 }
 
 // 前方宣言
-Node *term();
+Node *unary();
 
 Node *mul() {
-    Node *node = term();
+    Node *node = unary();
 
     for (;;) {
         if (consume('*'))
-            node = new_node('*', node, term());
+            node = new_node('*', node, unary());
         else if (consume('/'))
-            node = new_node('/', node, term());
+            node = new_node('/', node, unary());
         else
             return node;
     }
@@ -165,6 +165,14 @@ Node *term() {
             "数値でも開きカッコでもないトークンです");
 
     return NULL; // コンパイラの警告対応
+}
+
+Node *unary() {
+    if (consume('+'))
+        return term();
+    if (consume('-'))
+        return new_node('-', new_node_num(0), term());
+    return term();
 }
 
 void gen(Node *node) {
