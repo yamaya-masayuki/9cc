@@ -1,33 +1,10 @@
 #include "9cc.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdbool.h>
 
-// トークンの型を表す値
-enum {
-    TK_NUM = 256, // 整数トークン
-    TK_EOF,       // 入力の終わりを表すトークン
-};
-
-// トークンの型
-typedef struct {
-    int ty;      // トークンの型
-    int val;     // tyがTK_NUMの場合、その数値
-    char *input; // トークン文字列（エラーメッセージ用）
-} Token;
-
-// トークナイズした結果のトークン列はこの配列に保存する
-// 100個以上のトークンは来ないものとする
-Token tokens[100];
-
-// tokens配列のインデックス
-int pos = 0;
-
-int consume(int ty) {
-    if (tokens[pos].ty != ty)
-        return 0;
-    pos++;
-    return 1;
-}
+// 現在着目しているトークン
+Token *token;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
     Node *node = malloc(sizeof(Node));
@@ -42,6 +19,44 @@ Node *new_node_num(int val) {
     node->ty = ND_NUM;
     node->val = val;
     return node;
+}
+
+bool consume(int op) {
+	if (token->kind != TK_RESERVED || token->str[0] != op)
+		return false;
+	token = token->next;
+	return true;
+}
+
+// 次のトークンが期待している記号のときには、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect(char op) {
+	if (token->kind != TK_RESERVED || token->str[0] != op)
+		error_exit("'%c'ではありません", op);
+	token = token->next;
+}
+
+// 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
+// それ以外の場合にはエラーを報告する。
+int expect_number() {
+	if (token->kind != TK_NUM)
+		error_exit("数ではありません");
+	int val = token->val;
+	token = token->next;
+	return val;
+}
+
+bool at_eof() {
+	return token->kind == TK_EOF;
+}
+
+// 新しいトークンを作成してcurに繋げる
+Token *new_token(TokenKind kind, Token *cur, char *str) {
+	Token *tok = calloc(1, sizeof(Token));
+	tok->kind = kind;
+	tok->str = str;
+	cur->next = tok;
+	return tok;
 }
 
 // 前方宣言
@@ -80,20 +95,12 @@ Node *term() {
     // 次のトークンが'('なら、"(" expr ")"のはず
     if (consume('(')) {
         Node *node = expr();
-        if (!consume(')'))
-            error_at(tokens[pos].input,
-                    "開きカッコに対応する閉じカッコがありません");
+        expect(')');
         return node;
     }
 
     // そうでなければ数値のはず
-    if (tokens[pos].ty == TK_NUM)
-        return new_node_num(tokens[pos++].val);
-
-    error_at(tokens[pos].input,
-            "数値でも開きカッコでもないトークンです");
-
-    return NULL; // コンパイラの警告対応
+    return new_node_num(expect_number());
 }
 
 Node *unary() {
@@ -104,12 +111,12 @@ Node *unary() {
     return term();
 }
 
-// user_inputが指している文字列を
-// トークンに分割してtokensに保存する
-void tokenize() {
-    char *p = user_input;
+// 入力文字列pをトークナイズしてそれを返す
+Token* tokenize(char *p) {
+    Token head;
+    head.next = NULL;
+    Token *cur = &head;
 
-    int i = 0;
     while (*p) {
         // 空白文字をスキップ
         if (isspace(*p)) {
@@ -118,24 +125,19 @@ void tokenize() {
         }
 
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
-            tokens[i].ty = *p;
-            tokens[i].input = p;
-            i++;
-            p++;
+            cur = new_token(TK_RESERVED, cur, p++);
             continue;
         }
 
         if (isdigit(*p)) {
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            i++;
+            cur = new_token(TK_NUM, cur, p);
+            cur->val = strtol(p, &p, 10);
             continue;
         }
 
-        error_at(p, "トークナイズできません");
+        error_exit("トークナイズできません");
     }
 
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
+    new_token(TK_EOF, cur, p);
+    return head.next;
 }

@@ -1,19 +1,19 @@
 #include "9cc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 // 入力プログラム
 char *user_input;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        fprintf(stderr, "引数の個数が正しくありません\n");
+        error_exit("引数の個数が正しくありません");
         return 1;
     }
 
     // トークナイズしてパースする
-    user_input = argv[1];
-    tokenize();
+    token = tokenize(argv[1]);
     Node *node = expr();
 
     // アセンブリの前半部分を出力
@@ -32,10 +32,11 @@ int main(int argc, char **argv) {
 }
 
 // エラー箇所を報告するための関数
-void error_at(char *loc, char *msg) {
-    int pos = loc - user_input;
-    fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s", pos, ""); // pos個の空白を出力
-    fprintf(stderr, "^ %s\n", msg);
+//  printfと同じ引数を取る
+void error_exit(char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
     exit(1);
 }
