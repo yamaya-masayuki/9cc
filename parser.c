@@ -94,8 +94,12 @@ Node *relational() {
             node->lhs = node->rhs;
             node->rhs = tmp;
         }
-        else if (consume(">="))
+        else if (consume(">=")) {
             node = new_node(ND_GREATER_EQUAL, node, add());
+            Node *tmp = node->lhs;
+            node->lhs = node->rhs;
+            node->rhs = tmp;
+        }
         else
             return node;
     }

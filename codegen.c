@@ -33,7 +33,6 @@ void gen(Node *node) {
         printf("  movzx rax, al\n");
         break;
     case ND_GREATER_EQUAL:
-        fprintf(stderr, "!\n");
         printf("  cmp rax, rdi\n");
         printf("  setle al\n");
         printf("  movzx rax, al\n");
