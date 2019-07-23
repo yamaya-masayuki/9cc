@@ -22,41 +22,41 @@ Node *new_node_num(int val) {
 }
 
 bool consume(int op) {
-	if (token->kind != TK_RESERVED || token->str[0] != op)
-		return false;
-	token = token->next;
-	return true;
+    if (token->kind != TK_RESERVED || token->str[0] != op)
+        return false;
+    token = token->next;
+    return true;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char op) {
-	if (token->kind != TK_RESERVED || token->str[0] != op)
-		error_exit("'%c'ではありません", op);
-	token = token->next;
+    if (token->kind != TK_RESERVED || token->str[0] != op)
+        error_exit("'%c'ではありません", op);
+    token = token->next;
 }
 
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
-	if (token->kind != TK_NUM)
-		error_exit("数ではありません");
-	int val = token->val;
-	token = token->next;
-	return val;
+    if (token->kind != TK_NUM)
+        error_exit("数ではありません");
+    int val = token->val;
+    token = token->next;
+    return val;
 }
 
 bool at_eof() {
-	return token->kind == TK_EOF;
+    return token->kind == TK_EOF;
 }
 
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str) {
-	Token *tok = calloc(1, sizeof(Token));
-	tok->kind = kind;
-	tok->str = str;
-	cur->next = tok;
-	return tok;
+    Token *tok = calloc(1, sizeof(Token));
+    tok->kind = kind;
+    tok->str = str;
+    cur->next = tok;
+    return tok;
 }
 
 // 前方宣言

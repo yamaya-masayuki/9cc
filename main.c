@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-// 入力プログラム
-char *user_input;
-
 int main(int argc, char **argv) {
     if (argc != 2) {
         error_exit("引数の個数が正しくありません");
@@ -31,8 +28,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-// エラー箇所を報告するための関数
-//  printfと同じ引数を取る
+// エラーを報告するための関数
 void error_exit(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
