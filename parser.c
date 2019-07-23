@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 // 現在着目しているトークン
 Token *token;
@@ -66,7 +67,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 // 前方宣言
 Node *mul();
 
-Node *expr() {
+Node *add() {
     Node *node = mul();
 
     for (;;) {
@@ -74,11 +75,47 @@ Node *expr() {
             node = new_node(ND_ADD, node, mul());
         else if (consume("-"))
             node = new_node(ND_SUB, node, mul());
-        else if (consume(">"))
-            node = new_node(ND_GREATER, node, mul());
         else
             return node;
     }
+}
+
+Node *relational() {
+    Node * node = add();
+
+    for (;;) {
+        if (consume("<"))
+            node = new_node(ND_GREATER, node, add());
+        else if (consume("<="))
+            node = new_node(ND_GREATER_EQUAL, node, add());
+        else if (consume(">")) {
+            node = new_node(ND_GREATER, node, add());
+            Node *tmp = node->lhs;
+            node->lhs = node->rhs;
+            node->rhs = tmp;
+        }
+        else if (consume(">="))
+            node = new_node(ND_GREATER_EQUAL, node, add());
+        else
+            return node;
+    }
+}
+
+Node *equality() {
+    Node * node = relational();
+
+    for (;;) {
+        if (consume("=="))
+            node = new_node(ND_GREATER, node, relational());
+        else if (consume("!="))
+            node = new_node(ND_GREATER_EQUAL, node, relational());
+        else
+            return node;
+    }
+}
+
+Node *expr() {
+    return equality();
 }
 
 // 前方宣言
