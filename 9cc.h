@@ -18,11 +18,11 @@ typedef enum {
 
 // トークンの型
 typedef struct Token {
-    TokenKind kind; // トークン種別
+    TokenKind kind;     // トークン種別
     struct Token *next; // 次のトークン
-    int val;        // tyがTK_NUMの場合、その数値
-    char *str;      // トークン文字列
-    char *input;    // トークン文字列（エラーメッセージ用）
+    int val;            // tyがTK_NUMの場合、その数値
+    char *str;          // トークン文字列
+    char *input;        // トークン文字列（エラーメッセージ用）
 } Token;
 
 extern Token *token;
