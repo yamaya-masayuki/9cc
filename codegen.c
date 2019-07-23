@@ -27,6 +27,11 @@ void gen(Node *node) {
         printf("  cqo\n");
         printf("  idiv rdi\n");
         break;
+    case ND_GREATER:
+        printf("  cmp rax, rdi\n");
+        printf("  setl al\n");
+        printf("  movzx rax, al\n");
+        break;
     case ND_NUM:
         error_exit("Unrecognized NodeKind");
         break;

@@ -4,6 +4,7 @@ typedef enum {
     ND_SUB, // -
     ND_MUL, // *
     ND_DIV, // /
+    ND_GREATER, // >
     ND_NUM, // 整数
 } NodeKind;
 
@@ -27,6 +28,7 @@ typedef struct Token {
     struct Token *next; // 次のトークン
     int val;            // tyがTK_NUMの場合、その数値
     char *str;          // トークン文字列
+    int len;            // トークン文字列の長さ
     char *input;        // トークン文字列（エラーメッセージ用）
 } Token;
 

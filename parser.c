@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <string.h>
 
 // 現在着目しているトークン
 Token *token;
@@ -21,8 +22,10 @@ Node *new_node_num(int val) {
     return node;
 }
 
-bool consume(int op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op)
+bool consume(char* op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len) != 0)
         return false;
     token = token->next;
     return true;
@@ -51,10 +54,11 @@ bool at_eof() {
 }
 
 // 新しいトークンを作成してcurに繋げる
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
+    tok->len = len;
     cur->next = tok;
     return tok;
 }
@@ -66,10 +70,12 @@ Node *expr() {
     Node *node = mul();
 
     for (;;) {
-        if (consume('+'))
+        if (consume("+"))
             node = new_node(ND_ADD, node, mul());
-        else if (consume('-'))
+        else if (consume("-"))
             node = new_node(ND_SUB, node, mul());
+        else if (consume(">"))
+            node = new_node(ND_GREATER, node, mul());
         else
             return node;
     }
@@ -82,9 +88,9 @@ Node *mul() {
     Node *node = unary();
 
     for (;;) {
-        if (consume('*'))
+        if (consume("*"))
             node = new_node(ND_MUL, node, unary());
-        else if (consume('/'))
+        else if (consume("/"))
             node = new_node(ND_DIV, node, unary());
         else
             return node;
@@ -93,7 +99,7 @@ Node *mul() {
 
 Node *term() {
     // 次のトークンが'('なら、"(" expr ")"のはず
-    if (consume('(')) {
+    if (consume("(")) {
         Node *node = expr();
         expect(')');
         return node;
@@ -104,9 +110,9 @@ Node *term() {
 }
 
 Node *unary() {
-    if (consume('+'))
+    if (consume("+"))
         return term();
-    if (consume('-'))
+    if (consume("-"))
         return new_node(ND_SUB, new_node_num(0), term());
     return term();
 }
@@ -124,13 +130,26 @@ Token* tokenize(char *p) {
             continue;
         }
 
+        char *q = p + 1;
+        if (*q) {
+            if (*p == '>') {
+                if (*q == '=') {
+                    cur = new_token(TK_RESERVED, cur, p++, 2);
+                } else {
+                    cur = new_token(TK_RESERVED, cur, p, 1);
+                }
+                p++;
+                continue;
+            }
+        }
+
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
-            cur = new_token(TK_RESERVED, cur, p++);
+            cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
 
         if (isdigit(*p)) {
-            cur = new_token(TK_NUM, cur, p);
+            cur = new_token(TK_NUM, cur, p, 1);
             cur->val = strtol(p, &p, 10);
             continue;
         }
@@ -138,6 +157,6 @@ Token* tokenize(char *p) {
         error_exit("トークナイズできません");
     }
 
-    new_token(TK_EOF, cur, p);
+    new_token(TK_EOF, cur, p, 1);
     return head.next;
 }
