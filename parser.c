@@ -24,12 +24,22 @@ Node *new_node_num(int val) {
 }
 
 bool consume(char* op) {
-    if (token->kind != TK_RESERVED ||
-        strlen(op) != token->len ||
-        memcmp(token->str, op, token->len) != 0)
-        return false;
-    token = token->next;
-    return true;
+    if (token->kind == TK_RESERVED &&
+        strlen(op) == token->len &&
+        memcmp(token->str, op, token->len) == 0) {
+        token = token->next;
+        return true;
+    }
+    return false;
+}
+
+Token* consume_ident() {
+    if (token->kind == TK_IDENT) {
+        Token* t = token;
+        token = token->next;
+        return t;
+    }
+    return NULL;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
@@ -118,8 +128,17 @@ Node *equality() {
     }
 }
 
+Node *assign() {
+    Node * node = equality();
+
+    if (consume("="))
+        node = new_node(ND_ASSIGN, node, equality());
+
+    return node;
+}
+
 Node *expr() {
-    return equality();
+    return assign();
 }
 
 // 前方宣言
@@ -143,6 +162,15 @@ Node *term() {
     if (consume("(")) {
         Node *node = expr();
         expect(')');
+        return node;
+    }
+
+    // ローカル変数
+    Token* token = consume_ident();
+    if (token != NULL) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_LVAR;
+        node->offset = (token->str[0] - 'a' + 1) * 8;
         return node;
     }
 
@@ -171,6 +199,14 @@ Token* tokenize(char *p) {
             continue;
         }
 
+        // ローカル変数
+        if ('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p++, 1);
+            cur->len = 1;
+            continue;
+        }
+
+        // 関係演算子
         char *q = p + 1;
         if (*q) {
             if (*p == '>' || *p == '<') {
@@ -194,6 +230,7 @@ Token* tokenize(char *p) {
             continue;
         }
 
+        // 数値
         if (isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 1);
             cur->val = strtol(p, &p, 10);
