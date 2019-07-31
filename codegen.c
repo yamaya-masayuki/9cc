@@ -32,6 +32,21 @@ void gen(Node *node) {
         printf("  setl al\n");
         printf("  movzx rax, al\n");
         break;
+    case ND_GREATER_EQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  setle al\n");
+        printf("  movzx rax, al\n");
+        break;
+    case ND_EQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  sete al\n");
+        printf("  movzx rax, al\n");
+        break;
+    case ND_NOT_EQUAL:
+        printf("  cmp rax, rdi\n");
+        printf("  setne al\n");
+        printf("  movzx rax, al\n");
+        break;
     case ND_NUM:
         error_exit("Unrecognized NodeKind");
         break;

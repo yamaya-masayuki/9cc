@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 // 現在着目しているトークン
 Token *token;
@@ -66,7 +67,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 // 前方宣言
 Node *mul();
 
-Node *expr() {
+Node *add() {
     Node *node = mul();
 
     for (;;) {
@@ -74,11 +75,51 @@ Node *expr() {
             node = new_node(ND_ADD, node, mul());
         else if (consume("-"))
             node = new_node(ND_SUB, node, mul());
-        else if (consume(">"))
-            node = new_node(ND_GREATER, node, mul());
         else
             return node;
     }
+}
+
+Node *relational() {
+    Node * node = add();
+
+    for (;;) {
+        if (consume("<"))
+            node = new_node(ND_GREATER, node, add());
+        else if (consume("<="))
+            node = new_node(ND_GREATER_EQUAL, node, add());
+        else if (consume(">")) {
+            node = new_node(ND_GREATER, node, add());
+            Node *tmp = node->lhs;
+            node->lhs = node->rhs;
+            node->rhs = tmp;
+        }
+        else if (consume(">=")) {
+            node = new_node(ND_GREATER_EQUAL, node, add());
+            Node *tmp = node->lhs;
+            node->lhs = node->rhs;
+            node->rhs = tmp;
+        }
+        else
+            return node;
+    }
+}
+
+Node *equality() {
+    Node * node = relational();
+
+    for (;;) {
+        if (consume("=="))
+            node = new_node(ND_EQUAL, node, relational());
+        else if (consume("!="))
+            node = new_node(ND_NOT_EQUAL, node, relational());
+        else
+            return node;
+    }
+}
+
+Node *expr() {
+    return equality();
 }
 
 // 前方宣言
@@ -132,13 +173,18 @@ Token* tokenize(char *p) {
 
         char *q = p + 1;
         if (*q) {
-            if (*p == '>') {
+            if (*p == '>' || *p == '<') {
                 if (*q == '=') {
                     cur = new_token(TK_RESERVED, cur, p++, 2);
                 } else {
                     cur = new_token(TK_RESERVED, cur, p, 1);
                 }
                 p++;
+                continue;
+            }
+            if (strncmp(p, "==", 2) == 0 || strncmp(p, "!=", 2) == 0) {
+                cur = new_token(TK_RESERVED, cur, p, 2);
+                p += 2;
                 continue;
             }
         }
