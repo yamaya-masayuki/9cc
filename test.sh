@@ -40,5 +40,6 @@ try 1 '0 == 0'
 try 0 '0 == 1'
 try 0 '5 != 5'
 try 1 '3 != 9'
+try 99 'a = 99'
 
 echo OK
