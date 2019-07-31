@@ -173,7 +173,7 @@ Token* tokenize(char *p) {
 
         char *q = p + 1;
         if (*q) {
-            if (*p == '>') {
+            if (*p == '>' || *p == '<') {
                 if (*q == '=') {
                     cur = new_token(TK_RESERVED, cur, p++, 2);
                 } else {
