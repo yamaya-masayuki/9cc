@@ -6,6 +6,8 @@ typedef enum {
     ND_DIV, // /
     ND_GREATER, // >
     ND_GREATER_EQUAL, // >=
+    ND_EQUAL, // ==
+    ND_NOT_EQUAL, // !=
     ND_NUM, // 整数
 } NodeKind;
 
