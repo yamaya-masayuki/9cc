@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdio.h>
 
+// 文を格納する配列
+Node *code[100];
+
 // 現在着目しているトークン
 Token *token;
 
@@ -130,15 +133,26 @@ Node *equality() {
 
 Node *assign() {
     Node * node = equality();
-
     if (consume("="))
         node = new_node(ND_ASSIGN, node, equality());
-
     return node;
 }
 
 Node *expr() {
     return assign();
+}
+
+Node *stmt() {
+    Node *node = expr();
+    expect(';');
+    return node;
+}
+
+void program() {
+    int i = 0;
+    while (!at_eof())
+        code[i++] = stmt();
+    code[i] = NULL;
 }
 
 // 前方宣言
@@ -225,7 +239,7 @@ Token* tokenize(char *p) {
             }
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
