@@ -55,13 +55,17 @@ bool consume(char* op) {
     return false;
 }
 
-Token* consume_ident() {
-    if (token->kind == TK_IDENT) {
+Token* consume_by_kind(TokenKind kind) {
+    if (token->kind == kind) {
         Token* t = token;
         token = token->next;
         return t;
     }
     return NULL;
+}
+
+Token* consume_ident() {
+    return consume_by_kind(TK_IDENT);
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
@@ -165,8 +169,16 @@ Node *expr() {
 }
 
 Node *stmt() {
-    Node *node = expr();
-    expect(';');
+    Node *node;
+    if (consume_by_kind(TK_RETURN)) {
+        node = new_node(ND_RETURN, expr(), NULL);
+    } else {
+        node = expr();
+    }
+
+    if (!consume(";"))
+        error_exit("';'ではないトークンです: %d %s", token->kind, token->str);
+
     return node;
 }
 
@@ -234,6 +246,13 @@ Node *unary() {
     return term();
 }
 
+int is_alnum(char c) {
+    return ('a' <= c && c <= 'z') ||
+        ('A' <= c && c <= 'Z') ||
+        ('0' <= c && c <= '9') ||
+        (c == '_');
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token* tokenize(char *p) {
     Token head;
@@ -247,16 +266,10 @@ Token* tokenize(char *p) {
             continue;
         }
 
-        // ローカル変数
-        char *s = p;
-        while ('a' <= *s && *s <= 'z') {
-            s++;
-        }
-        if (s != p) {
-            const int length = s - p;
-            cur = new_token(TK_IDENT, cur, p, length);
-            cur->len = length;
-            p = s;
+        // return文
+        if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
             continue;
         }
 
@@ -288,6 +301,19 @@ Token* tokenize(char *p) {
         if (isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 1);
             cur->val = strtol(p, &p, 10);
+            continue;
+        }
+
+        // ローカル変数
+        char *s = p;
+        while ('a' <= *s && *s <= 'z') {
+            s++;
+        }
+        if (s != p) {
+            const int length = s - p;
+            cur = new_token(TK_IDENT, cur, p, length);
+            cur->len = length;
+            p = s;
             continue;
         }
 
