@@ -41,5 +41,8 @@ try 0 '0 == 1;'
 try 0 '5 != 5;'
 try 1 '3 != 9;'
 try 99 'a = 99;'
+try 7 'foo = 4; bar = 7;'
+try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
+try 0 'foo = 4; return 0; bar = 7;'
 
 echo OK
