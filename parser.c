@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 // ローカル変数の型
 typedef struct LVar LVar;
@@ -168,11 +169,36 @@ Node *expr() {
     return assign();
 }
 
+Token* peek(TokenKind kind) {
+    for (Token* t = token; t != NULL && t->kind != TK_EOF; t = t->next) {
+        if (t->kind == kind) {
+            return t;
+        }
+    }
+    return NULL;
+}
+
+static int statement_index = 0;
+
 Node *stmt() {
     Node *node;
     if (consume_by_kind(TK_IF)) {
         node = new_node(ND_IF, expr(), NULL);
-        node->rhs = stmt();
+        Node *then_statement = stmt();
+        //fprintf(stderr, "token=%d `%s`\n", token->kind, token->str);
+        Token* maybe_else = peek(TK_ELSE);
+        if (maybe_else != NULL) {
+            token = maybe_else->next; // elseトークンをスキップ: consume関数がやってること
+            Node *node_else = new_node(ND_ELSE, NULL, NULL);
+            node_else->lhs = then_statement;
+            code[statement_index++] = then_statement;
+            node_else->rhs = stmt();
+            code[statement_index++] = node_else->rhs;
+            node->rhs = node_else;
+        } else {
+            node->rhs = then_statement;
+            code[statement_index++] = then_statement;
+        }
         return node;
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
@@ -188,11 +214,11 @@ Node *stmt() {
 }
 
 void program() {
-    int i = 0;
+    statement_index = 0;
     while (!at_eof()) {
-        code[i++] = stmt();
+        code[statement_index++] = stmt();
     }
-    code[i] = NULL;
+    code[statement_index] = NULL;
 }
 
 // 前方宣言
@@ -282,6 +308,13 @@ Token* tokenize(char *p) {
         if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
             cur = new_token(TK_IF, cur, p, 2);
             p += 2;
+            continue;
+        }
+
+        // else文
+        if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
+            cur = new_token(TK_ELSE, cur, p, 4);
+            p += 4;
             continue;
         }
 

@@ -42,9 +42,19 @@ void gen(Node *node) {
         gen(node->lhs);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je .Lend%08d\n", label_sequence_no);
-        gen(node->rhs);
-        printf(".Lend%08d:\n", label_sequence_no);
+        Node *maybe_else = node->rhs;
+        if (maybe_else->kind == ND_ELSE) {
+            printf("  je .Lelse%08d\n", label_sequence_no);
+            gen(maybe_else->lhs);
+            printf("  jmp .Lend%08d\n", label_sequence_no);
+            printf(".Lelse%08d:\n", label_sequence_no);
+            gen(maybe_else->rhs);
+            printf(".Lend%08d:\n", label_sequence_no);
+        } else {
+            printf("  je .Lend%08d\n", label_sequence_no);
+            gen(maybe_else);
+            printf(".Lend%08d:\n", label_sequence_no);
+        }
         label_sequence_no++;
         return;
     default:
