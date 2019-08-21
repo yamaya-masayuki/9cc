@@ -170,14 +170,19 @@ Node *expr() {
 
 Node *stmt() {
     Node *node;
-    if (consume_by_kind(TK_RETURN)) {
+    if (consume_by_kind(TK_IF)) {
+        node = new_node(ND_IF, expr(), NULL);
+        node->rhs = stmt();
+        return node;
+    } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
     } else {
         node = expr();
     }
 
-    if (!consume(";"))
+    if (!consume(";")) {
         error_exit("';'ではないトークンです: %d %s", token->kind, token->str);
+    }
 
     return node;
 }
@@ -270,6 +275,13 @@ Token* tokenize(char *p) {
         if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
             cur = new_token(TK_RETURN, cur, p, 6);
             p += 6;
+            continue;
+        }
+
+        // if文
+        if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
+            cur = new_token(TK_IF, cur, p, 2);
+            p += 2;
             continue;
         }
 

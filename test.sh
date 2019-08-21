@@ -44,5 +44,9 @@ try 99 'a = 99;'
 try 7 'foo = 4; bar = 7;'
 try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
 try 0 'foo = 4; return 0; bar = 7;'
+try 1 'foo = 0; if (3 == 3) foo = 1; return foo;'
+try 0 'foo = 0; if (0 == 3) foo = 1; return foo;'
+try 7 'if (1 == 1) 7;'
+try 0 'if (1 == 0) 7;'
 
 echo OK
