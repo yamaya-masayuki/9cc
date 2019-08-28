@@ -1,5 +1,6 @@
 #include "9cc.h"
 #include <stdio.h>
+#include <assert.h>
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
@@ -39,20 +40,22 @@ void gen(Node *node) {
         printf("  ret\n");
         return;
     case ND_IF:
-        gen(node->lhs);
+        gen(node->condition);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         Node *maybe_else = node->rhs;
-        if (maybe_else->kind == ND_ELSE) {
+        if (maybe_else) {
             printf("  je .Lelse%08d\n", label_sequence_no);
-            gen(maybe_else->lhs);
+            gen(node->lhs);
             printf("  jmp .Lend%08d\n", label_sequence_no);
             printf(".Lelse%08d:\n", label_sequence_no);
-            gen(maybe_else->rhs);
+            fprintf(stderr, "codegen: rhs before = %p\n", node->rhs);
+            //gen(node->rhs);
+            fprintf(stderr, "codegen: rhs after\n");
             printf(".Lend%08d:\n", label_sequence_no);
         } else {
             printf("  je .Lend%08d\n", label_sequence_no);
-            gen(maybe_else);
+            gen(node->lhs);
             printf(".Lend%08d:\n", label_sequence_no);
         }
         label_sequence_no++;

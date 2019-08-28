@@ -49,6 +49,7 @@ try() {
 #try 7 'if (1 == 1) 7;'
 #try 0 'if (1 == 0) 7;'
 #try 0 'if (1 == 0) 7; else 0;'
-try 7 'if (1 == 1) x = 5; y = 2; x + y; else 0;'
+#try 7 'if (1 == 1) x = 5; y = 2; x + y;'
+try 8 'if (1 == 1) x = 5; y = 2; x + y; else 8;'
 
 echo OK

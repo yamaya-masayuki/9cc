@@ -20,6 +20,7 @@ typedef struct Node {
     NodeKind kind;      // 演算子かND_NUM
     struct Node *lhs;   // 左辺
     struct Node *rhs;   // 右辺
+    struct Node *condition; // 条件(ifの場合のみ)
     int val;            // kindがND_NUMの場合のみ使う
     int offset;         // kindがND_LVARの場合のみ使う
 } Node;
