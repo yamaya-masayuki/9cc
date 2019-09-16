@@ -13,3 +13,4 @@ extern void *vec_pop(Vector *v);
 extern void *vec_last(Vector *v);
 extern bool vec_contains(Vector *v, void *elem);
 extern bool vec_union1(Vector *v, void *elem);
+extern bool vec_empty(Vector *v);

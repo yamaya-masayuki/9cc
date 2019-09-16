@@ -57,6 +57,12 @@ void gen(Node *node) {
         }
         label_sequence_no++;
         return;
+    case ND_BLOCK:
+        for (int i = 0; i < node->block->len; ++i) {
+            gen(node->block->data[i]);
+            printf("  pop rax\n");
+        }
+        return;
     default:
         break;
         // through
