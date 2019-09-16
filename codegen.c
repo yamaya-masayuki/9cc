@@ -1,5 +1,6 @@
 #include "9cc.h"
 #include <stdio.h>
+#include <assert.h>
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
@@ -11,6 +12,8 @@ void gen_lval(Node *node) {
 }
 
 void gen(Node *node) {
+    static int label_sequence_no = 0;
+
     switch (node->kind) {
     case ND_NUM:
         printf("  push %d\n", node->val);
@@ -35,6 +38,24 @@ void gen(Node *node) {
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
+        return;
+    case ND_IF:
+        gen(node->condition);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        Node *maybe_else = node->rhs;
+        if (maybe_else) {
+            printf("  je .Lelse%08d\n", label_sequence_no);
+            gen(node->lhs);
+            printf("  jmp .Lend%08d\n", label_sequence_no);
+            printf(".Lelse%08d:\n", label_sequence_no);
+            printf(".Lend%08d:\n", label_sequence_no);
+        } else {
+            printf("  je .Lend%08d\n", label_sequence_no);
+            gen(node->lhs);
+            printf(".Lend%08d:\n", label_sequence_no);
+        }
+        label_sequence_no++;
         return;
     default:
         break;
