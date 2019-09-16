@@ -1,7 +1,6 @@
 #include "9cc.h"
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
@@ -192,6 +191,13 @@ Node *stmt() {
         return node;
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
+    } else if (consume("{")) {
+        Vector *vec = new_vec();
+        do {
+            vec_push(vec, stmt());
+        } while (!consume("}"));
+        node = new_node(ND_BLOCK, NULL, NULL);
+        node->block = vec;
     } else {
         node = expr();
     }

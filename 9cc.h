@@ -1,3 +1,5 @@
+#include "vector.h"
+
 // 抽象構文木のノードの種類
 typedef enum {
     ND_ADD, // +
@@ -13,6 +15,7 @@ typedef enum {
     ND_IF, // if
     ND_ELSE, // else
     ND_LVAR,    // ローカル変数
+    ND_BLOCK,    // ブロック
     ND_NUM, // 整数
 } NodeKind;
 
@@ -21,6 +24,7 @@ typedef struct Node {
     struct Node *lhs;   // 左辺
     struct Node *rhs;   // 右辺
     struct Node *condition; // 条件(ifの場合のみ)
+    Vector *block;   // ブロック
     int val;            // kindがND_NUMの場合のみ使う
     int offset;         // kindがND_LVARの場合のみ使う
 } Node;
