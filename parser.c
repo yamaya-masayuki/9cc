@@ -185,10 +185,8 @@ Node *stmt() {
         Token* maybe_else = peek(TK_ELSE);
         if (maybe_else != NULL) {
             token = maybe_else->next; // elseトークンをスキップ: consume関数がやってること
-            fprintf(stderr, "stmt: token=%d\n", maybe_else->kind);
             Node *node_else = new_node(ND_ELSE, NULL, NULL);
             node_else->lhs = stmt();
-            fprintf(stderr, "stmt: token=%d\n", maybe_else->kind);
             node->rhs = node_else;
         }
         return node;
@@ -196,7 +194,6 @@ Node *stmt() {
         node = new_node(ND_RETURN, expr(), NULL);
     } else {
         node = expr();
-        fprintf(stderr, "stmt: node=%d\n", node->kind);
     }
 
     if (!consume(";")) {
@@ -214,7 +211,6 @@ void program() {
     statement_index = 0;
     while (!at_eof()) {
         code[statement_index++] = stmt();
-        fprintf(stderr, "parser: statement_index=%d\n", statement_index);
     }
     code[statement_index] = NULL;
 }

@@ -49,9 +49,6 @@ void gen(Node *node) {
             gen(node->lhs);
             printf("  jmp .Lend%08d\n", label_sequence_no);
             printf(".Lelse%08d:\n", label_sequence_no);
-            fprintf(stderr, "codegen: rhs before = %p\n", node->rhs);
-            //gen(node->rhs);
-            fprintf(stderr, "codegen: rhs after\n");
             printf(".Lend%08d:\n", label_sequence_no);
         } else {
             printf("  je .Lend%08d\n", label_sequence_no);

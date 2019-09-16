@@ -27,7 +27,6 @@ int main(int argc, char **argv) {
     // 先頭の式から順にコード生成
     for (int i = 0; code[i]; i++) {
         gen(code[i]);
-        fprintf(stderr, "main: end for loop\n");
         // 式の評価結果としてスタックに一つの値が残っているはずなので、スタック
         // が溢れないようにポップしておく
         printf("  pop rax\n");
