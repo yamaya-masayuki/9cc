@@ -47,3 +47,7 @@ bool vec_union1(Vector *v, void *elem) {
 	vec_push(v, elem);
 	return true;
 }
+
+bool vec_empty(Vector *v) {
+    return v->len == 0;
+}

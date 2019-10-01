@@ -46,5 +46,11 @@ try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
 try 0 'foo = 4; return 0; bar = 7;'
 try 7 'if (1 == 1) 7;' # ブロックが未サポートなので1文だけ
 try 0 'if (1 == 0) 7; else 0;' # 2文以上書けるが実行がおかしい
+try 0 '{ 3; 4; }' # ブロックは0を返す
+try 9 '{ 1; 2; return 9; }'
+try 3 '{ x = 1; y = 2; return x + y; }'
+try 3 'if (1 == 1) { return 3; } else { return 6; }'
+try 6 'if (0 == 1) { return 3; } else { return 6; }'
+try 2 'if (0 == 1) { return 3; } else { a = 1; b = 0; return (a + b) * 2; }'
 
 echo OK

@@ -1,7 +1,6 @@
 #include "9cc.h"
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
@@ -180,18 +179,23 @@ Node *stmt() {
     if (consume_by_kind(TK_IF)) {
         node = new_node(ND_IF, NULL, NULL);
         node->condition = expr();
-        Node *then_statement = stmt();
-        node->lhs = then_statement;
+        node->lhs = stmt();
         Token* maybe_else = peek(TK_ELSE);
         if (maybe_else != NULL) {
             token = maybe_else->next; // elseトークンをスキップ: consume関数がやってること
-            Node *node_else = new_node(ND_ELSE, NULL, NULL);
-            node_else->lhs = stmt();
-            node->rhs = node_else;
+            node->rhs = stmt();
         }
         return node;
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
+    } else if (consume("{")) {
+        Vector *vec = new_vec();
+        do {
+            vec_push(vec, stmt());
+        } while (!consume("}"));
+        node = new_node(ND_BLOCK, NULL, NULL);
+        node->block = vec;
+        return node; // ここでreturnするので文末の';'は不要
     } else {
         node = expr();
     }
@@ -331,7 +335,7 @@ Token* tokenize(char *p) {
             }
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';' || *p == '{' || *p == '}') {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }

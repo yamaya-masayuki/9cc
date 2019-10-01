@@ -43,19 +43,27 @@ void gen(Node *node) {
         gen(node->condition);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        Node *maybe_else = node->rhs;
-        if (maybe_else) {
+        if (node->rhs) {
+            // elseがある場合
             printf("  je .Lelse%08d\n", label_sequence_no);
             gen(node->lhs);
             printf("  jmp .Lend%08d\n", label_sequence_no);
             printf(".Lelse%08d:\n", label_sequence_no);
+            gen(node->rhs);
             printf(".Lend%08d:\n", label_sequence_no);
         } else {
+            // elseがない場合
             printf("  je .Lend%08d\n", label_sequence_no);
             gen(node->lhs);
             printf(".Lend%08d:\n", label_sequence_no);
         }
         label_sequence_no++;
+        return;
+    case ND_BLOCK:
+        for (int i = 0; i < node->block->len; ++i) {
+            gen(node->block->data[i]);
+            printf("  pop rax\n");
+        }
         return;
     default:
         break;
