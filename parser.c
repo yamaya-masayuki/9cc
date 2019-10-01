@@ -176,19 +176,22 @@ Token* peek(TokenKind kind) {
 
 Node *stmt() {
     Node *node;
-    if (consume_by_kind(TK_IF)) {
+    if (consume_by_kind(TK_IF)) { // if
         node = new_node(ND_IF, NULL, NULL);
         node->condition = expr();
         node->lhs = stmt();
         Token* maybe_else = peek(TK_ELSE);
-        if (maybe_else != NULL) {
+        if (maybe_else != NULL) { // else
             token = maybe_else->next; // elseトークンをスキップ: consume関数がやってること
             node->rhs = stmt();
         }
         return node;
-    } else if (consume_by_kind(TK_RETURN)) {
-        node = new_node(ND_RETURN, expr(), NULL);
-    } else if (consume("{")) {
+    } else if (consume_by_kind(TK_WHILE)) { // while
+        node = new_node(ND_WHILE, NULL, NULL);
+        node->condition = expr();
+        node->lhs = stmt();
+        return node;
+    } else if (consume("{")) { // ブロック
         Vector *vec = new_vec();
         do {
             vec_push(vec, stmt());
@@ -196,6 +199,8 @@ Node *stmt() {
         node = new_node(ND_BLOCK, NULL, NULL);
         node->block = vec;
         return node; // ここでreturnするので文末の';'は不要
+    } else if (consume_by_kind(TK_RETURN)) {
+        node = new_node(ND_RETURN, expr(), NULL);
     } else {
         node = expr();
     }
@@ -313,6 +318,13 @@ Token* tokenize(char *p) {
         if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
             cur = new_token(TK_ELSE, cur, p, 4);
             p += 4;
+            continue;
+        }
+
+        // while文
+        if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+            cur = new_token(TK_WHILE, cur, p, 5);
+            p += 5;
             continue;
         }
 
