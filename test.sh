@@ -46,9 +46,10 @@ try() {
 #try 0 'foo = 4; return 0; bar = 7;'
 #try 7 'if (1 == 1) 7;' # ブロックが未サポートなので1文だけ
 #try 0 'if (1 == 0) 7; else 0;' # 2文以上書けるが実行がおかしい
-try 0 '{ 3; 4; };' # ブロックは0を返す
-try 9 '{ 1; 2; return 9; };'
-try 3 '{ x = 1; y = 2; return x + y; };'
-try 6 'if (1 == 0) { 1; 2; return 3; }; else { 4; 5; return 6; };'
+try 0 '{ 3; 4; }' # ブロックは0を返す
+try 9 '{ 1; 2; return 9; }'
+try 3 '{ x = 1; y = 2; return x + y; }'
+try 3 'if (1 == 1) { return 3; } else { return 6; }'
+try 6 'if (0 == 1) { return 3; } else { return 6; }'
 
 echo OK

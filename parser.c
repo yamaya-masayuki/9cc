@@ -198,6 +198,7 @@ Node *stmt() {
         } while (!consume("}"));
         node = new_node(ND_BLOCK, NULL, NULL);
         node->block = vec;
+        return node; // ここでreturnするので文末の';'は不要
     } else {
         node = expr();
     }
