@@ -54,5 +54,7 @@ try 6 'if (0 == 1) { return 3; } else { return 6; }'
 try 2 'if (0 == 1) { return 3; } else { a = 1; b = 0; return (a + b) * 2; }'
 try 0 'i = 0; while (0) i = 1; return i;'
 try 5 'i = 0; while (i < 5) i = i + 1; return i;'
+try 8 'x = 2; for (i = 0; i < 2; i = i + 1) x = x * 2; x;'
+try 10 'x = 0; for (i = 0; i < 10; i = i + 1) { x = x + 1; } x;'
 
 echo OK

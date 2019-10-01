@@ -59,16 +59,6 @@ void gen(Node *node) {
         }
         label_sequence_no++;
         return;
-/*
-.LbeginXXX:
-  Aをコンパイルしたコード
-  pop rax
-  cmp rax, 0
-  je  .LendXXX
-  Bをコンパイルしたコード
-  jmp .LbeginXXX
-.LendXXX:
-*/
     case ND_WHILE:
         printf(".Lbegin%08d:\n", label_sequence_no);
         gen(node->condition);
@@ -76,6 +66,25 @@ void gen(Node *node) {
         printf("  cmp rax, 0\n");
         printf("  je .Lend%08d\n", label_sequence_no);
         gen(node->lhs);
+        printf("  jmp .Lbegin%08d\n", label_sequence_no);
+        printf(".Lend%08d:\n", label_sequence_no);
+        label_sequence_no++;
+        return;
+    case ND_FOR:
+        if (node->block->data[0]) {
+            gen(node->block->data[0]);
+        }
+        printf(".Lbegin%08d:\n", label_sequence_no);
+        if (node->block->data[1]) {
+            gen(node->block->data[1]);
+        }
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%08d\n", label_sequence_no);
+        gen(node->lhs);
+        if (node->block->data[2]) {
+            gen(node->block->data[2]);
+        }
         printf("  jmp .Lbegin%08d\n", label_sequence_no);
         printf(".Lend%08d:\n", label_sequence_no);
         label_sequence_no++;

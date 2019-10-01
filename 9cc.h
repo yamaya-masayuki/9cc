@@ -15,6 +15,7 @@ typedef enum {
     ND_IF, // if
     ND_ELSE, // else
     ND_WHILE, // while
+    ND_FOR, // for
     ND_LVAR,    // ローカル変数
     ND_BLOCK,    // ブロック
     ND_NUM, // 整数
@@ -38,6 +39,7 @@ typedef enum {
     TK_IF,          // if文
     TK_ELSE,        // else文
     TK_WHILE,       // while文
+    TK_FOR,         // for文
     TK_NUM,         // 整数トークン
     TK_EOF,         // 入力の終わりを表すトークン
 } TokenKind;

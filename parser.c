@@ -191,6 +191,32 @@ Node *stmt() {
         node->condition = expr();
         node->lhs = stmt();
         return node;
+    } else if (consume_by_kind(TK_FOR)) { // for
+        if (consume("(")) {
+            Vector *v = new_vec();
+            Node * e = NULL;
+
+            e = expr();
+            vec_push(v, e);
+            if (!consume(";")) {
+                error_exit("';'ではないトークンです: %d %s", token->kind, token->str);
+            }
+            e = expr();
+            vec_push(v, e);
+            if (!consume(";")) {
+                error_exit("';'ではないトークンです: %d %s", token->kind, token->str);
+            }
+            e = expr();
+            vec_push(v, e);
+            if (!consume(")")) {
+                error_exit("')'ではないトークンです: %d %s", token->kind, token->str);
+            }
+
+            node = new_node(ND_FOR, NULL, NULL);
+            node->block = v;
+            node->lhs = stmt();
+        }
+        return node;
     } else if (consume("{")) { // ブロック
         Vector *vec = new_vec();
         do {
@@ -325,6 +351,13 @@ Token* tokenize(char *p) {
         if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
             cur = new_token(TK_WHILE, cur, p, 5);
             p += 5;
+            continue;
+        }
+
+        // for文
+        if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
+            cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
             continue;
         }
 
