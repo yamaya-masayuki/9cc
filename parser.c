@@ -277,20 +277,18 @@ Node *term() {
     // ローカル変数
     Token* token = consume_ident();
     if (token != NULL) {
-        Node *node = calloc(1, sizeof(Node));
-        node->kind = ND_LVAR;
+        Node * node = new_node(ND_LVAR, NULL, NULL);
         LVar *lvar = find_lvar(token);
-        if (lvar != NULL) {
-            node->offset = lvar->offset;
-        } else {
+        if (lvar == NULL) {
+            // LVarをnewする
             lvar = calloc(1, sizeof(LVar));
             lvar->next = locals;
             lvar->name = token->str;
             lvar->len = token->len;
             lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
-            node->offset = lvar->offset;
             locals = lvar;
         }
+        node->offset = lvar->offset;
         return node;
     }
 
