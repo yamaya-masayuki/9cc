@@ -1,6 +1,7 @@
 #include "9cc.h"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
@@ -9,6 +10,18 @@ void gen_lval(Node *node) {
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", node->offset);
     printf("  push rax\n");
+}
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+void gen_fun(Node *node) {
+    static char buffer[1024];
+
+    size_t len = MIN(node->identLength,
+                  sizeof(buffer) / sizeof(buffer[0]) - 1);
+    memcpy(buffer, node->ident, len);
+    buffer[len] = '\0';
+    printf("  call %s\n", buffer);
 }
 
 void gen(Node *node) {
@@ -94,6 +107,9 @@ void gen(Node *node) {
             gen(node->block->data[i]);
             printf("  pop rax\n");
         }
+        return;
+    case ND_FUN:
+        gen_fun(node);
         return;
     default:
         break;
