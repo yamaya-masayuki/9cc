@@ -18,6 +18,7 @@ typedef enum {
     ND_FOR, // for
     ND_LVAR,    // ローカル変数
     ND_BLOCK,    // ブロック
+    ND_FUN, // 関数
     ND_NUM, // 整数
 } NodeKind;
 
@@ -28,6 +29,8 @@ typedef struct Node {
     struct Node *condition; // 条件(ifの場合のみ)
     Vector *block;   // ブロック
     int val;            // kindがND_NUMの場合のみ使う
+    char *ident;    // kindがND_FUNの婆愛のみ使う(関数名)
+    int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
 } Node;
 
