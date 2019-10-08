@@ -180,7 +180,7 @@ Token* next_by(Token* from, TokenKind kind, const char *str) {
     }
     Token* t = from->next;
     if (t->kind == kind && memcmp(t->str, str, strlen(str)) == 0) {
-        return token;
+        return t;
     }
     return NULL;
 }
