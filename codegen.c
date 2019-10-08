@@ -21,7 +21,7 @@ void gen_fun(Node *node) {
                   sizeof(buffer) / sizeof(buffer[0]) - 1);
     memcpy(buffer, node->ident, len);
     buffer[len] = '\0';
-    printf("  call %s\n", buffer);
+    printf("  call _%s\n", buffer);
 }
 
 void gen(Node *node) {

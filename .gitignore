@@ -4,6 +4,7 @@
 # Unignore all with extensions and more
 !*.*
 !Makefile
+!extern
 
 # Prerequisites
 *.d
