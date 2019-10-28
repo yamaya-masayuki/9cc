@@ -18,10 +18,15 @@ void gen_fun(Node *node) {
     static char buffer[1024];
     static char *registers[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
-    fprintf(stderr, ">>> block->len=%d\n", node->block->len);
     for (int i = 0; i < node->block->len; ++i) {
         Node *argNode = (Node *)node->block->data[i];
-        printf("  mov %s, %d\n", registers[i], argNode->val);
+        if (argNode->kind == ND_NUM) { // 整数定数の場合
+            printf("  mov %s, %d\n", registers[i], argNode->val);
+        } else if (argNode->kind == ND_LVAR) { // ローカル変数の場合
+            gen_lval(argNode);
+            printf("  pop rax\n");
+            printf("  mov %s, [rax]\n", registers[i]);
+        }
     }
 
     size_t len = MIN(node->identLength,
@@ -38,13 +43,13 @@ void gen(Node *node) {
     case ND_NUM:
         printf("  push %d\n", node->val);
         return;
-    case ND_LVAR:
+    case ND_LVAR: // 変数の参照
         gen_lval(node);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
         printf("  push rax\n");
         return;
-    case ND_ASSIGN:
+    case ND_ASSIGN: // 変数への代入
         gen_lval(node->lhs);
         gen(node->rhs);
         printf("  pop rdi\n");
