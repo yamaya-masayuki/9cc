@@ -16,6 +16,13 @@ void gen_lval(Node *node) {
 
 void gen_fun(Node *node) {
     static char buffer[1024];
+    static char *registers[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+    fprintf(stderr, ">>> block->len=%d\n", node->block->len);
+    for (int i = 0; i < node->block->len; ++i) {
+        Node *argNode = (Node *)node->block->data[i];
+        printf("  mov %s, %d\n", registers[i], argNode->val);
+    }
 
     size_t len = MIN(node->identLength,
                   sizeof(buffer) / sizeof(buffer[0]) - 1);

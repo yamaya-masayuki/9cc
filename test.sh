@@ -58,6 +58,6 @@ try() {
 #try 10 'x = 0; for (i = 0; i < 10; i = i + 1) { x = x + 1; } x;'
 try 0 'foo();'
 try 0 'foo(1);'
-try 0 'foo(1, 2);'
+try 0 'foo(1, 2, 3, 4, 5);'
 
 echo OK
