@@ -273,6 +273,22 @@ Node *mul() {
     }
 }
 
+Node *local_var(Token* t) {
+    Node * node = new_node(ND_LVAR, NULL, NULL);
+    LVar *lvar = find_lvar(t);
+    if (lvar == NULL) {
+        // LVarをnewする
+        lvar = calloc(1, sizeof(LVar));
+        lvar->next = locals;
+        lvar->name = t->str;
+        lvar->len = t->len;
+        lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
+        locals = lvar;
+    }
+    node->offset = lvar->offset;
+    return node;
+}
+
 Node *term() {
     // 次のトークンが'('なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -287,29 +303,31 @@ Node *term() {
         // `()`を先読みしてあれば関数ノードを作成する
         Token* openParen = equal(t->next, TK_RESERVED, "(");
         if (openParen != NULL) {
-            Token *closeParen = equal(openParen->next, TK_RESERVED, ")");
-            if (closeParen != NULL) {
-                token = closeParen->next;
-                Node *node = new_node(ND_FUN, NULL, NULL);
-                node->ident = t->str;
-                node->identLength = t->len;
-                return node;
+            Token *closeParen = NULL;
+            Vector *args = new_vec();
+            for (Token* at = openParen->next; at != NULL; at = at->next) {
+                if (at->kind == TK_IDENT) {
+                    vec_push(args, local_var(at));
+                } else if (at->kind == TK_NUM) {
+                    vec_push(args, new_node_num(at->val));
+                } else {
+                    closeParen = equal(at, TK_RESERVED, ")");
+                    if (closeParen != NULL) {
+                        break;
+                    } else if (equal(at, TK_RESERVED, ",") == NULL) {
+                        error_exit("関数呼び出しシンタックスエラー: %s\n", at->str);
+                    }
+                }
             }
+            token = closeParen->next;
+            Node *node = new_node(ND_FUN, NULL, NULL);
+            node->ident = t->str;
+            node->identLength = t->len;
+            node->block = args;
+            return node;
         }
         // ローカル変数
-        Node * node = new_node(ND_LVAR, NULL, NULL);
-        LVar *lvar = find_lvar(t);
-        if (lvar == NULL) {
-            // LVarをnewする
-            lvar = calloc(1, sizeof(LVar));
-            lvar->next = locals;
-            lvar->name = t->str;
-            lvar->len = t->len;
-            lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
-            locals = lvar;
-        }
-        node->offset = lvar->offset;
-        return node;
+        return local_var(t);
     }
 
     // そうでなければ数値のはず
@@ -398,7 +416,7 @@ Token* tokenize(char *p) {
             }
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';' || *p == '{' || *p == '}') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',') {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
