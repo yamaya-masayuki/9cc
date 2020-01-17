@@ -22,6 +22,30 @@ typedef enum {
     ND_NUM, // 整数
 } NodeKind;
 
+static inline const char* NodeKindDescription(NodeKind kind) {
+    static const char* description[] = {
+        "ND_ADD", // +
+        "ND_SUB", // -
+        "ND_MUL", // *
+        "ND_DIV", // /
+        "ND_GREATER", // >
+        "ND_GREATER_EQUAL", // >=
+        "ND_EQUAL", // ==
+        "ND_NOT_EQUAL", // !=
+        "ND_ASSIGN",  // =
+        "ND_RETURN", // return
+        "ND_IF", // if
+        "ND_ELSE", // else
+        "ND_WHILE", // while
+        "ND_FOR", // for
+        "ND_LVAR",    // ローカル変数
+        "ND_BLOCK",    // ブロック
+        "ND_FUN", // 関数
+        "ND_NUM", // 整数
+    };
+    return description[kind];
+}
+
 typedef struct Node {
     NodeKind kind;      // 演算子かND_NUM
     struct Node *lhs;   // 左辺
@@ -57,10 +81,15 @@ typedef struct Token {
     char *input;        // トークン文字列（エラーメッセージ用）
 } Token;
 
+typedef enum {
+    GEN_PUSHED_RESULT,
+    GEN_DONT_PUSHED_RESULT,
+} GenResult;
+
 extern Token *token;
 
 extern Token *tokenize(char *p);
 extern void error_exit(char *fmt, ...);
 extern void program();
-extern void gen(Node *node);
+extern GenResult gen(Node *node);
 extern Node *code[];
