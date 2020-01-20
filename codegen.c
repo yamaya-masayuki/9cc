@@ -31,9 +31,10 @@ void gen_lval(Node *node) {
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+static const char *ArgRegsiters[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 void gen_fun(Node *node) {
     static char buffer[1024];
-    static char *registers[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
     int ops = stackpos;
     bool padding = (stackpos % 16 != 0);
@@ -45,11 +46,11 @@ void gen_fun(Node *node) {
     for (int i = 0; i < node->block->len; ++i) {
         Node *argNode = (Node *)node->block->data[i];
         if (argNode->kind == ND_NUM) { // 整数定数の場合
-            printf("  mov %s, %d\n", registers[i], argNode->val);
+            printf("  mov %s, %d\n", ArgRegsiters[i], argNode->val);
         } else if (argNode->kind == ND_LVAR) { // ローカル変数の場合
             gen_lval(argNode);
             gen_pop("rax");
-            printf("  mov %s, [rax]\n", registers[i]);
+            printf("  mov %s, [rax]\n", ArgRegsiters[i]);
         }
     }
 
@@ -63,6 +64,40 @@ void gen_fun(Node *node) {
         printf("  add rsp, 8\n"); // 16バイトアラインの後始末
         stackpos -= 8;
     }
+}
+
+void gen_fun_impl(Node *node) {
+    static char name[1024];
+    size_t len = MIN(node->identLength,
+                  sizeof(name) / sizeof(name[0]) - 1);
+    memcpy(name, node->ident, len);
+    name[len] = '\0';
+
+    // 関数ラベル
+    printf("_%s:\n", name);
+
+    // プロローグ
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  xor eax, eax\n"); // mov eax, 0 と同じ
+
+    // 仮引数部分
+    for (int i = 0; i < node->block->len; ++i) {
+        Node *arg = (Node *)node->block->data[i];
+        if (arg->kind != ND_LVAR)
+            error_exit("代入の左辺値が変数ではありません: %s", NodeKindDescription(arg->kind));
+        printf("  mov qword ptr [rbp - %d], %s\n", arg->offset, ArgRegsiters[i]);
+    }
+
+    // ブロック部分: node->lhsにはND_BLOCKが格納されている
+    for (int i = 0; i < node->lhs->block->len; ++i) {
+        gen(node->lhs->block->data[i]);
+        gen_pop("rax");
+    }
+
+    // エピローグ
+    printf("  pop rbp\n");
+    printf("  ret\n");
 }
 
 GenResult gen(Node *node) {
@@ -88,9 +123,9 @@ GenResult gen(Node *node) {
         return GEN_PUSHED_RESULT;
     case ND_RETURN:
         gen(node->lhs);
-        gen_pop("rax");
+        gen_pop("rax"); // 戻り値
         printf("  mov rsp, rbp\n");
-        gen_pop("rbp");
+        gen_pop("rbp"); // 戻りアドレス
         printf("  ret\n");
         return GEN_DONT_PUSHED_RESULT;
     case ND_IF:
@@ -152,6 +187,9 @@ GenResult gen(Node *node) {
     case ND_FUN:
         gen_fun(node);
         return GEN_PUSHED_RESULT;
+    case ND_FUN_IMPL:
+        gen_fun_impl(node);
+        return GEN_DONT_PUSHED_RESULT;
     default:
         break;
         // through

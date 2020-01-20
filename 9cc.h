@@ -42,6 +42,7 @@ static inline const char* NodeKindDescription(NodeKind kind) {
         "ND_LVAR",    // ローカル変数
         "ND_BLOCK",    // ブロック
         "ND_FUN", // 関数
+        "ND_FUN_IMPL", // 関数定義
         "ND_NUM", // 整数
     };
     return description[kind];
