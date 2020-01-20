@@ -252,7 +252,17 @@ static int statement_index = 0;
 void program() {
     statement_index = 0;
     while (!at_eof()) {
-        code[statement_index++] = stmt();
+        Node *node = stmt();
+        code[statement_index] = node;
+        // ノードがブロックの場合、直前のノードを調べて、
+        // 関数呼び出しノードであれば、関数定義ノードに書き換える
+        if (node->kind == ND_BLOCK && statement_index != 0) {
+            Node *maybeFun = code[statement_index - 1];
+            if (maybeFun->kind == ND_FUN && maybeFun->val == 0) {
+                maybeFun->kind = ND_FUN_IMPL;
+            }
+        }
+        statement_index++;
     }
     code[statement_index] = NULL;
 }
@@ -310,6 +320,7 @@ Node *term() {
                     vec_push(args, local_var(at));
                 } else if (at->kind == TK_NUM) {
                     vec_push(args, new_node_num(at->val));
+                    at->val = 1; // 関数呼び出し確定とする
                 } else {
                     closeParen = equal(at, TK_RESERVED, ")");
                     if (closeParen != NULL) {
