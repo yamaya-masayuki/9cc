@@ -96,7 +96,6 @@ void gen_fun_impl(Node *node) {
     }
 
     // エピローグ
-    printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
 }
@@ -203,7 +202,6 @@ GenResult gen(Node *node) {
     case ND_BLOCK:
         for (int i = 0; i < node->block->len; ++i) {
             gen(node->block->data[i]);
-            //gen_pop("rax")
         }
         return GEN_PUSHED_RESULT;
     case ND_FUN:
