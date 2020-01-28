@@ -19,10 +19,9 @@ int main(int argc, char **argv) {
     printf("_main:\n");
 
     // プロローグ
-    // 変数26個分の領域を確保する
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 208\n");
+    printf("  sub rsp, 256\n"); // スタックサイズ=256
 
     // 先頭の式から順にコード生成
     for (int i = 0; code[i]; i++) {
