@@ -24,6 +24,7 @@ void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
         error_exit("代入の左辺値が変数ではありません");
 
+    // 変数へのアドレスをスタックに積む
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", node->offset);
     gen_push("rax");
@@ -65,15 +66,17 @@ void gen_fun_impl(Node *node) {
 
     // 関数ラベル
     printf("_%s:\n", name);
+
     const bool is_main = (strcmp(name, "main") == 0);
+    const int nargs = node->block->len;
 
     // プロローグ
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  xor eax, eax\n"); // mov eax, 0 と同じ
-    if (is_main) {
-        printf("  sub rsp, 256\n"); // スタックサイズ=256
-    }
+
+    const int stack_size = is_main ? 256 : (nargs * 8);
+    printf("  sub rsp, %d\n", stack_size); // スタックサイズ
 
     // 仮引数部分
     for (int i = 0; i < node->block->len; ++i) {

@@ -70,12 +70,34 @@ main() {
 	return i;
 }
 '
-try 2 '
+try 3 '
 fun() {
-	return 1;
+	return 1 + 1;
 }
 main() {
 	return fun() + 1;
+}
+'
+try 4 '
+fun(i) {
+	return i + 3;
+}
+main() {
+	return fun(1);
+}
+'
+try 55 '
+fib(i) {
+	if (i < 2) {
+		return i;
+	} else {
+		j = i - 2;
+		k = i - 1;
+		return fib(j) + fib(k);
+	}
+}
+main() {
+	return fib(10);
 }
 '
 
