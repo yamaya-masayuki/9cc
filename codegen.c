@@ -221,6 +221,15 @@ GenResult gen(Node *node) {
          */
         gen_fun_impl(node);
         return GEN_DONT_PUSHED_RESULT;
+    case ND_ADDR:
+        gen_lval(node->rhs);
+        return GEN_PUSHED_RESULT;
+    case ND_DEREF:
+        gen(node->rhs);
+        gen_pop("rax");
+        printf("  mov rax, [rax]\n");
+        gen_push("rax");
+        return GEN_PUSHED_RESULT;
     default:
         break;
         // through

@@ -21,6 +21,8 @@ typedef enum {
     ND_FUN, // 関数
     ND_FUN_IMPL, // 関数定義
     ND_NUM, // 整数
+    ND_ADDR, // アドレス取得演算子
+    ND_DEREF, // アドレス参照演算子
 } NodeKind;
 
 static inline const char* NodeKindDescription(NodeKind kind) {

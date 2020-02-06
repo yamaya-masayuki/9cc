@@ -286,6 +286,7 @@ void program() {
 
 // 前方宣言
 Node *unary();
+Node *pointer();
 
 Node *mul() {
     Node *node = unary();
@@ -358,6 +359,11 @@ Node *term() {
         return local_var(t);
     }
 
+    Node *node = pointer();
+    if (node) {
+        return node;
+    }
+
     // そうでなければ数値のはず
     return new_node_num(expect_number());
 }
@@ -368,6 +374,16 @@ Node *unary() {
     if (consume("-"))
         return new_node(ND_SUB, new_node_num(0), term());
     return term();
+}
+
+Node *pointer() {
+    if (consume("&"))
+        // オペランドについてruiさんの文書ではlhsだが他の演算子との整合性を考慮
+        // してrhsにする
+        return new_node(ND_ADDR, NULL, unary());
+    else if (consume("*"))
+        return new_node(ND_DEREF, NULL, unary());
+    return NULL;
 }
 
 int is_alnum(char c) {
@@ -444,7 +460,7 @@ Token* tokenize(char *p) {
             }
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',' || *p == '&') {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
