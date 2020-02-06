@@ -102,7 +102,9 @@ try() {
 #'
 try 28 '
 main() {
+	int i;
 	i = 28;
+	int a;
 	a = &i;
 	return *a;
 }

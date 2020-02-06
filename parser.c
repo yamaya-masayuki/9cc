@@ -42,6 +42,34 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *reference_local_var(Token* t) {
+    Node *node = new_node(ND_LVAR, NULL, NULL);
+    LVar *lvar = find_lvar(t);
+    if (lvar == NULL) {
+        error_exit("変数が定義されていません: %s\n", t->str);
+    }
+    node->offset = lvar->offset;
+    return node;
+}
+
+Node *define_local_var(Token* t) {
+    LVar *lvar = find_lvar(t);
+    if (lvar) {
+        error_exit("同名の変数が定義されています: %s\n", t->str);
+    }
+    Node *node = new_node(ND_LVAR, NULL, NULL);
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = t->str;
+    lvar->len = t->len;
+    lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
+
+    locals = lvar;
+
+    node->offset = lvar->offset;
+    return node;
+}
+
 bool consume_and_next(char* op, bool must_to_next) {
     if (token->kind == TK_RESERVED &&
         strlen(op) == token->len &&
@@ -241,6 +269,8 @@ Node *stmt() {
         return node; // ここでreturnするので文末の';'は不要
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
+    } else if (consume_by_kind(TK_INT)) {
+        node = define_local_var(consume_ident());
     } else {
         node = expr();
         // ノードが関数ノードで次がブロックの場合は関数定義ノード
@@ -301,22 +331,6 @@ Node *mul() {
     }
 }
 
-Node *local_var(Token* t) {
-    Node * node = new_node(ND_LVAR, NULL, NULL);
-    LVar *lvar = find_lvar(t);
-    if (lvar == NULL) {
-        // LVarをnewする
-        lvar = calloc(1, sizeof(LVar));
-        lvar->next = locals;
-        lvar->name = t->str;
-        lvar->len = t->len;
-        lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
-        locals = lvar;
-    }
-    node->offset = lvar->offset;
-    return node;
-}
-
 Node *term() {
     // 次のトークンが'('なら、"(" expr ")"のはず
     if (consume("(")) {
@@ -335,7 +349,7 @@ Node *term() {
             Vector *args = new_vec();
             for (Token* at = openParen->next; at != NULL; at = at->next) {
                 if (at->kind == TK_IDENT) {
-                    vec_push(args, local_var(at));
+                    vec_push(args, reference_local_var(at));
                 } else if (at->kind == TK_NUM) {
                     vec_push(args, new_node_num(at->val));
                     at->val = 1; // 関数呼び出し確定とする
@@ -356,7 +370,7 @@ Node *term() {
             return node;
         }
         // ローカル変数
-        return local_var(t);
+        return reference_local_var(t);
     }
 
     Node *node = pointer();
@@ -437,6 +451,13 @@ Token* tokenize(char *p) {
         // for文
         if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
             cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
+        // int型
+        if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
+            cur = new_token(TK_INT, cur, p, 3);
             p += 3;
             continue;
         }
