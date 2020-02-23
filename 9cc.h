@@ -55,9 +55,9 @@ typedef struct Node {
     struct Node *lhs;   // 左辺
     struct Node *rhs;   // 右辺
     struct Node *condition; // 条件(ifの場合のみ)
-    Vector *block;   // ブロック
+    Vector *block;      // ブロック
     int val;            // kindがND_NUMの場合はその値、kindがND_FUNの場合、関数呼び出し確定済かどうかを示すフラグ値
-    char *ident;    // kindがND_FUNの場合のみ使う(関数名)
+    char *ident;        // kindがND_FUNの場合のみ使う(関数名)
     int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
 } Node;
@@ -98,3 +98,10 @@ extern void error_exit(char *fmt, ...);
 extern void program();
 extern GenResult gen(Node *node);
 extern Node *code[];
+
+#define D(fmt, ...) \
+    fprintf(stderr, ("%s[%d] " fmt "\n"), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+
+#define D_INT(v) \
+    do { D(#v "=%d", (v)); fflush(stderr); } while (0)
+

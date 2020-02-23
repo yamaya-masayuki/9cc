@@ -8,6 +8,13 @@
 // 現在のパース位置がトップレベルかどうか
 static int nest_level = 0;
 
+// 型
+typedef struct Type Type;
+struct Type {
+    enum { INT, PTR } type; // 型の種別
+    Type *ptr_to;           // typeがPTRの時だけ有効
+};
+
 // ローカル変数の型
 typedef struct LVar LVar;
 struct LVar {
@@ -15,6 +22,7 @@ struct LVar {
     char *name; // 変数の名前
     int len;    // 名前の長さ
     int offset; // RBPからのオフセット
+    Type type;  // 型情報
 };
 
 LVar *locals;   // ローカル変数のリストの先頭
@@ -45,34 +53,6 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *reference_local_var(Token* t) {
-    Node *node = new_node(ND_LVAR, NULL, NULL);
-    LVar *lvar = find_lvar(t);
-    if (lvar == NULL) {
-        error_exit("変数が定義されていません: %s\n", t->str);
-    }
-    node->offset = lvar->offset;
-    return node;
-}
-
-Node *define_local_var(Token* t) {
-    LVar *lvar = find_lvar(t);
-    if (lvar) {
-        error_exit("同名の変数が定義されています: %s\n", t->str);
-    }
-    Node *node = new_node(ND_LVAR, NULL, NULL);
-    lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals;
-    lvar->name = t->str;
-    lvar->len = t->len;
-    lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
-
-    locals = lvar;
-
-    node->offset = lvar->offset;
-    return node;
-}
-
 bool consume_and_next(char* op, bool must_to_next) {
     if (token->kind == TK_RESERVED &&
         strlen(op) == token->len &&
@@ -88,6 +68,58 @@ bool consume_and_next(char* op, bool must_to_next) {
 
 bool consume(char* op) {
     return consume_and_next(op, true);
+}
+
+Node *reference_local_var(Token* t) {
+    Node *node = new_node(ND_LVAR, NULL, NULL);
+    LVar *lvar = find_lvar(t);
+    if (lvar == NULL) {
+        error_exit("変数が定義されていません: %s\n", t->str);
+    }
+    node->offset = lvar->offset;
+    return node;
+}
+
+Node *define_local_var() {
+    // （連続する）ポインタ修飾をパースする
+    Type *type_root = NULL;
+    Type *type_current = NULL;
+    while (consume("*")) {
+        Type *ti = calloc(1, sizeof(Type));
+        ti.type = PTR;
+        if (!root) {
+            root = type;
+        }
+        if (type_current) {
+            type_current.ptr_to = ti;
+        }
+        type_current = ti;
+        D("(pointer)type=%p", ti)
+    }
+
+    Token *t = consume_ident();
+    if (!t) {
+        error_exit("識別子がありません: %s\n", token);
+    }
+
+    LVar *lvar = find_lvar(t);
+    if (lvar) {
+        error_exit("同名の変数が定義されています: %s\n", t->str);
+    }
+    Node *node = new_node(ND_LVAR, NULL, NULL);
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals;
+    lvar->name = t->str;
+    lvar->len = t->len;
+    lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
+    lvar->type = type_root;
+    D("lvar->name=%s", lvar->name)
+
+    locals = lvar;
+
+    node->offset = lvar->offset;
+
+    return node;
 }
 
 Token* consume_by_kind(TokenKind kind) {
@@ -355,11 +387,14 @@ Node *stmt() {
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
     } else if (consume_by_kind(TK_INT)) {
+        D_INT(nest_level);
         if (nest_level == 1) {
+            // 戻り値としてのintなので関数定義としてパースする
             return define_function(consume_ident());
         }
         else {
-            node = define_local_var(consume_ident());
+            // ローカル変数定義としてパースする
+            node = define_local_var();
         }
     } else {
         node = expr();
@@ -382,16 +417,6 @@ void program() {
         nest_level = 0;
         Node *node = stmt();
         code[statement_index] = node;
-#if 0
-        // ノードがブロックの場合、直前のノードを調べて、
-        // 関数呼び出しノードであれば、関数定義ノードに書き換える
-        if (node->kind == ND_BLOCK && statement_index != 0) {
-            Node *maybeFun = code[statement_index - 1];
-            if (maybeFun->kind == ND_FUN && maybeFun->val == 0) {
-                maybeFun->kind = ND_FUN_IMPL;
-            }
-        }
-#endif
         statement_index++;
     }
     code[statement_index] = NULL;

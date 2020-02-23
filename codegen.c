@@ -27,6 +27,7 @@ void gen_lval(Node *node) {
     // 変数へのアドレスをスタックに積む
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", node->offset);
+
     gen_push("rax");
 }
 
@@ -108,7 +109,10 @@ GenResult gen(Node *node) {
     case ND_NUM:
         gen_push_num(node->val);
         return GEN_PUSHED_RESULT;
-    case ND_LVAR: // 変数の参照
+    case ND_LVAR:
+        /*
+         * 変数の参照
+         */
         gen_lval(node);
         gen_pop("rax");
         printf("  mov rax, [rax]\n");
