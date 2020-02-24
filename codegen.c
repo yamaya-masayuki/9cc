@@ -22,7 +22,7 @@ void gen_pop(char *reg) {
 
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
-        error_exit("代入の左辺値が変数ではありません");
+        error_exit("代入の左辺値が変数ではありません。 node=%s", NodeKindDescription(node->kind));
 
     // 変数へのアドレスをスタックに積む
     printf("  mov rax, rbp\n");
@@ -105,6 +105,8 @@ GenResult gen(Node *node) {
     static int label_sequence_no = 0;
     GenResult result;
 
+    //D("%s", NodeKindDescription(node->kind));
+
     switch (node->kind) {
     case ND_NUM:
         gen_push_num(node->val);
@@ -129,7 +131,7 @@ GenResult gen(Node *node) {
          * - raxアドレスにrdi値を書く
          * - rdi値をスタックに置く
          */
-        gen_lval(node->lhs);
+        gen(node->lhs);
         result = gen(node->rhs);
         assert(result == GEN_PUSHED_RESULT); // ここでのgenは必ずスタックに結果をプッシュしなければならない
         gen_pop("rdi"); // 右辺

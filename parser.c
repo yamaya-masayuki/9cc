@@ -22,7 +22,7 @@ struct LVar {
     char *name; // 変数の名前
     int len;    // 名前の長さ
     int offset; // RBPからのオフセット
-    Type type;  // 型情報
+    Type *type;  // 型情報
 };
 
 LVar *locals;   // ローカル変数のリストの先頭
@@ -70,6 +70,19 @@ bool consume(char* op) {
     return consume_and_next(op, true);
 }
 
+Token* consume_by_kind(TokenKind kind) {
+    if (token->kind == kind) {
+        Token* t = token;
+        token = token->next;
+        return t;
+    }
+    return NULL;
+}
+
+Token* consume_ident() {
+    return consume_by_kind(TK_IDENT);
+}
+
 Node *reference_local_var(Token* t) {
     Node *node = new_node(ND_LVAR, NULL, NULL);
     LVar *lvar = find_lvar(t);
@@ -86,15 +99,15 @@ Node *define_local_var() {
     Type *type_current = NULL;
     while (consume("*")) {
         Type *ti = calloc(1, sizeof(Type));
-        ti.type = PTR;
-        if (!root) {
-            root = type;
+        ti->type = PTR;
+        if (!type_root) {
+            type_root = ti;
         }
         if (type_current) {
-            type_current.ptr_to = ti;
+            type_current->ptr_to = ti;
         }
         type_current = ti;
-        D("(pointer)type=%p", ti)
+        //D("(pointer)type=%p", ti);
     }
 
     Token *t = consume_ident();
@@ -113,7 +126,7 @@ Node *define_local_var() {
     lvar->len = t->len;
     lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
     lvar->type = type_root;
-    D("lvar->name=%s", lvar->name)
+    //D("lvar->name=%s", lvar->name);
 
     locals = lvar;
 
@@ -122,23 +135,14 @@ Node *define_local_var() {
     return node;
 }
 
-Token* consume_by_kind(TokenKind kind) {
-    if (token->kind == kind) {
-        Token* t = token;
-        token = token->next;
-        return t;
-    }
-    return NULL;
-}
-
-Token* consume_ident() {
-    return consume_by_kind(TK_IDENT);
+bool is_reserved_with(Token *token, char c) {
+    return token->kind == TK_RESERVED && token->str[0] == c;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op)
+    if (!is_reserved_with(token, op))
         error_exit("'%c'ではありません", op);
     token = token->next;
 }
@@ -298,11 +302,11 @@ Node *define_function(Token *indentifier) {
                 if (at->kind == TK_INT) {
                     // 引数の型は単なる読み捨て
                     type_declared = 1;
-                } else if (at->kind == TK_IDENT) {
+                } else if (is_reserved_with(at, '*') || at->kind == TK_IDENT) {
                     if (!type_declared)
                         error_exit("関数定義シンタックスエラー: %s\n", at->str);
                     type_declared = 0;
-                    vec_push(args, define_local_var(at));
+                    vec_push(args, define_local_var());
                 } else {
                     type_declared = 0;
                     closeParen = equal(at, TK_RESERVED, ")");
@@ -387,7 +391,6 @@ Node *stmt() {
     } else if (consume_by_kind(TK_RETURN)) {
         node = new_node(ND_RETURN, expr(), NULL);
     } else if (consume_by_kind(TK_INT)) {
-        D_INT(nest_level);
         if (nest_level == 1) {
             // 戻り値としてのintなので関数定義としてパースする
             return define_function(consume_ident());
