@@ -5,14 +5,6 @@
 
 static GenResult gen_impl(Node *);
 
-void gen_push(char *reg) {
-    printf("  push %s\n", reg);
-}
-
-void gen_pop(char *reg) {
-    printf("  pop %s\n", reg);
-}
-
 /*
  * 与えられたノードが変数を指しているときに、その変数のアドレスを計算して、それ
  * をスタックにプッシュします。
@@ -58,7 +50,7 @@ void gen_fun(Node *node) {
             printf("  mov %s, %d\n", ArgRegsiters[i], argNode->val);
         } else if (argNode->kind == ND_LVAR) { // ローカル変数の場合
             gen_lval(argNode);
-            gen_pop("rax");
+            printf("  pop rax\n");
             printf("  mov %s, [rax]\n", ArgRegsiters[i]);
         }
     }
@@ -105,13 +97,13 @@ void gen_fun_impl(Node *node) {
         // gen_implが結果をスタックに積んだ場合は取り除いてRAXに入れ関数の戻り
         // 値とする
         if (resutl == GEN_PUSHED_RESULT) {
-            gen_pop("rax");
+            printf("  pop rax  # block's result\n");
         }
     }
 
     // エピローグ
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    printf("  pop rbp  # epilogue\n");
+    printf("  ret      # epilogue\n");
 }
 
 static int nested = 0;
@@ -210,7 +202,7 @@ GenResult gen_impl(Node *node) {
     case ND_WHILE:
         printf(".Lbegin%08d:\n", label_sequence_no);
         gen_impl(node->condition);
-        gen_pop("rax");
+        printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je .Lend%08d\n", label_sequence_no);
         gen_impl(node->lhs);
@@ -227,7 +219,7 @@ GenResult gen_impl(Node *node) {
         if (node->block->data[1]) {
             gen_impl(node->block->data[1]);
         }
-        gen_pop("rax");
+        printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je .Lend%08d\n", label_sequence_no);
         gen_impl(node->lhs);
@@ -269,14 +261,18 @@ GenResult gen_impl(Node *node) {
         printf("  # }}} Function Implementation\n");
         return GEN_DONT_PUSHED_RESULT;
     case ND_ADDR:
+        printf("  # Address {{{\n");
         gen_lval(node->rhs);
         nested--;
+        printf("  # }}} Address\n");
         return GEN_PUSHED_RESULT;
     case ND_DEREF:
+        printf("  # Dereference {{{\n");
         gen_impl(node->rhs);
-        gen_pop("rax");
-        printf("  mov rax, [rax]\n");
-        gen_push("rax");
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]  # dereference(outside)\n");
+        printf("  push rax        # dereference(outside)\n");
+        printf("  # }}} Dereference\n");
         nested--;
         return GEN_PUSHED_RESULT;
     default:
@@ -287,50 +283,53 @@ GenResult gen_impl(Node *node) {
     gen_impl(node->lhs);
     gen_impl(node->rhs);
 
-    // 二項演算子系
-    gen_pop("rdi");
-    gen_pop("rax");
+    /*
+     * 二項演算子系
+     *  スタックに積まれている非演算数を取り出す
+     */ 
+    printf("  pop rdi       # binary operator\n");
+    printf("  pop rax       # binary operator\n");
 
     switch (node->kind) {
     case ND_ADD:
-        printf("  add rax, rdi\n");
+        printf("  add rax, rdi  # Addtion\n");
         break;
     case ND_SUB:
-        printf("  sub rax, rdi\n");
+        printf("  sub rax, rdi  # Subtraction\n");
         break;
     case ND_MUL:
-        printf("  imul rdi\n");
+        printf("  imul rdi      # Multiplication\n");
         break;
     case ND_DIV:
-        printf("  cqo\n");
-        printf("  idiv rdi\n");
+        printf("  cqo           # Division\n");
+        printf("  idiv rdi      # Division\n");
         break;
     case ND_GREATER:
-        printf("  cmp rax, rdi\n");
-        printf("  setl al\n");
-        printf("  movzx rax, al\n");
+        printf("  cmp rax, rdi  # Greator\n");
+        printf("  setl al       # Greator\n");
+        printf("  movzx rax, al # Greator\n");
         break;
     case ND_GREATER_EQUAL:
-        printf("  cmp rax, rdi\n");
-        printf("  setle al\n");
-        printf("  movzx rax, al\n");
+        printf("  cmp rax, rdi  # Greator Equal\n");
+        printf("  setle al      # Greator Equal\n");
+        printf("  movzx rax, al # Greator Equal\n");
         break;
     case ND_EQUAL:
-        printf("  cmp rax, rdi\n");
-        printf("  sete al\n");
-        printf("  movzx rax, al\n");
+        printf("  cmp rax, rdi  # Equal\n");
+        printf("  sete al       # Equal\n");
+        printf("  movzx rax, al # Equal\n");
         break;
     case ND_NOT_EQUAL:
-        printf("  cmp rax, rdi\n");
-        printf("  setne al\n");
-        printf("  movzx rax, al\n");
+        printf("  cmp rax, rdi  # Not equal\n");
+        printf("  setne al      # Not equal\n");
+        printf("  movzx rax, al # Not equal\n");
         break;
     default:
         break;
         // through
     }
 
-    gen_push("rax");
+    printf("  push rax  # gem_impl's LAST\n");
     nested--;
     return GEN_PUSHED_RESULT;
 }
