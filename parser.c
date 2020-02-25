@@ -94,6 +94,8 @@ Node *reference_local_var(Token* t) {
 }
 
 Node *define_local_var() {
+    D("token: %s", TokenDescription(token));
+
     // （連続する）ポインタ修飾をパースする
     Type *type_root = NULL;
     Type *type_current = NULL;
@@ -107,12 +109,11 @@ Node *define_local_var() {
             type_current->ptr_to = ti;
         }
         type_current = ti;
-        //D("(pointer)type=%p", ti);
     }
 
     Token *t = consume_ident();
     if (!t) {
-        error_exit("識別子がありません: %s\n", token);
+        error_exit("識別子がありません: %s\n", TokenDescription(token));
     }
 
     LVar *lvar = find_lvar(t);
@@ -126,7 +127,6 @@ Node *define_local_var() {
     lvar->len = t->len;
     lvar->offset = (locals == NULL ? 0 : locals->offset) + 8;
     lvar->type = type_root;
-    //D("lvar->name=%s", lvar->name);
 
     locals = lvar;
 
@@ -151,7 +151,7 @@ void expect(char op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
     if (token->kind != TK_NUM)
-        error_exit("数ではありません");
+        error_exit("数ではありません: %s", TokenDescription(token));
     int val = token->val;
     token = token->next;
     return val;
@@ -294,11 +294,12 @@ Node *define_function(Token *indentifier) {
     if (indentifier != NULL) {
         // `()`を先読みしてあれば関数定義ノードを作成する
         Token* openParen = equal(indentifier->next, TK_RESERVED, "(");
-        if (openParen != NULL) {
+        if (openParen) {
             Token *closeParen = NULL;
             Vector *args = new_vec();
             int type_declared = 0;
-            for (Token* at = openParen->next; at != NULL; at = at->next) {
+            for (Token* at = openParen->next; at; at = at->next) {
+                D("%s", TokenDescription(at));
                 if (at->kind == TK_INT) {
                     // 引数の型は単なる読み捨て
                     type_declared = 1;
@@ -306,18 +307,20 @@ Node *define_function(Token *indentifier) {
                     if (!type_declared)
                         error_exit("関数定義シンタックスエラー: %s\n", at->str);
                     type_declared = 0;
+                    D("at: %s", TokenDescription(at));
+                    token = at; // Ad-Hocすぎる...
                     vec_push(args, define_local_var());
                 } else {
                     type_declared = 0;
                     closeParen = equal(at, TK_RESERVED, ")");
-                    if (closeParen != NULL) {
+                    if (closeParen) {
                         break;
                     } else if (equal(at, TK_RESERVED, ",") == NULL) {
                         error_exit("関数定義シンタックスエラー: %s\n", at->str);
                     }
                 }
             }
-            token = closeParen->next;
+            token = closeParen->next; // Ad-Hocすぎる...
             Node *node = new_node(ND_FUN_IMPL, NULL, NULL);
             node->ident = indentifier->str;
             node->identLength = indentifier->len;
