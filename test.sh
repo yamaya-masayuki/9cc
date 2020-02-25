@@ -125,8 +125,10 @@ try 3 '
 int main() {
 	int x;
 	int *y;
+	int **z;
 	y = &x;
-	*y = 3;
+	z = &y;
+	**z = 3;
 	return x;
 }
 '

@@ -20,6 +20,14 @@ void gen_pop(char *reg) {
  * れることになります。
  */
 void gen_lval(Node *node) {
+    // 0. デリファレンスの場合、ND_LVARに到達するまでの回数（すなわち`*`）を数
+    //    える
+    int dereferences = 0;
+    while (node->kind == ND_DEREF) {
+        dereferences++;
+        node = node->rhs;
+    }
+
     if (node->kind != ND_LVAR)
         error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_descripion(node));
 
@@ -29,6 +37,14 @@ void gen_lval(Node *node) {
 
     // 2. 結果（変数のアドレス）をスタックに積む
     printf("  push rax       # lvalue\n");
+
+    // 3. デリファレンスの場合は変数の実体のアドレスに到達するまでスタックに積
+    //    む
+    for (int i = 0; i < dereferences; ++i) {
+        printf("  pop rax        # lvalue(dereference)\n");
+        printf("  mov rax, [rax] # lvalue(dereference)\n");
+        printf("  push rax       # lvalue\n");
+    }
 }
 
 static const char *ArgRegsiters[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
