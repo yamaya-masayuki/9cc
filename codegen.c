@@ -21,7 +21,7 @@ void gen_pop(char *reg) {
  */
 void gen_lval(Node *node) {
     if (node->kind != ND_LVAR)
-        error_exit("代入の左辺値が変数ではありません。%s", node_descripion(node));
+        error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_descripion(node));
 
     // 1. RBPからオフセット分減算する
     printf("  mov rax, rbp   # lvalue\n");
@@ -79,7 +79,7 @@ void gen_fun_impl(Node *node) {
     for (int i = 0; i < node->block->len; ++i) {
         Node *arg = (Node *)node->block->data[i];
         if (arg->kind != ND_LVAR)
-            error_exit("代入の左辺値が変数ではありません: %s", node_descripion(arg));
+            error_exit("代入の左辺値が変数ではありません(args)。%s", node_descripion(arg));
         printf("  mov qword ptr [rbp - %d], %s  # argument %d\n", arg->offset, ArgRegsiters[i], i);
     }
 
