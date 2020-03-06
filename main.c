@@ -4,6 +4,8 @@
 #include <stdarg.h>
 
 int main(int argc, char **argv) {
+    D("~~~ENTER~~~");
+
     if (argc != 2) {
         error_exit("引数の個数が正しくありません");
         return 1;
@@ -27,7 +29,7 @@ int main(int argc, char **argv) {
             printf("  pop rax\n");
         }
     }
-    D("finish");
+    D("~~~EXIT~~~");
 
     return 0;
 }

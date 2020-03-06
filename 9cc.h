@@ -72,15 +72,16 @@ typedef struct Node {
 
 static inline const char* node_description(Node *node) {
     static char buffer[1024];
+    static char tmp[1024];
 
-    static char tmp[1024] = {'\0'};
-    if (node->kind == ND_LVAR) {
+    tmp[0] = '\0';
+    if (node->kind == ND_FUN || node->kind == ND_FUN_IMPL || node->kind == ND_LVAR) {
         const int n = MIN(sizeof(tmp) - 1, node->identLength);
         memcpy(tmp, node->ident, n);
         tmp[n] = '\0';
     }
 
-    sprintf(buffer, "Node: %-8s, `%s`, %3d, %14p/%14p/%14p",
+    sprintf(buffer, "%-8s '%-6s' %3d %14p/%14p/%14p",
             node_kind_descripion(node->kind),
             tmp,
             node->offset,

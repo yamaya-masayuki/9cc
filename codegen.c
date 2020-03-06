@@ -297,12 +297,12 @@ GenResult gen_impl(Node *node) {
     gen_impl(node->rhs);
 
     // スタックに積まれている非演算数を取り出す
-    printf("  pop rdi       # binary operator\n");
-    printf("  pop rax       # binary operator\n");
+    printf("  pop rdi       # binary operator\n"); // 右手
+    printf("  pop rax       # binary operator\n"); // 左手
 
-    // ポインタの演算のために右手の値をデータサイズ倍する
+    // ポインタの演算のために右手(rdi)をデータサイズ倍する
     printf("  mov rbx, %-4d # Compute pointer\n", node->val);
-    printf("  imul rax, rbx # Compute pointer\n"); // rax = rax * rdi
+    printf("  imul rdi, rbx # Compute pointer\n"); // rdi = rdi * rbx
 
     switch (node->kind) {
     case ND_ADD:
