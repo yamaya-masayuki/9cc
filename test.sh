@@ -5,7 +5,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s extern/foo.o
+  gcc -o tmp tmp.s extern/foo.o extern/alloc4.o
   ./tmp
   actual="$?"
 
@@ -130,6 +130,18 @@ int main() {
 	z = &y;
 	**z = 3;
 	return x;
+}
+'
+
+try 8 '
+int main() {
+	int *p;
+	int **pp;
+	pp = &p;
+	alloc4(pp, 1, 2, 4, 8);
+	int *q;
+	q = p + 3;
+	return *q;
 }
 '
 

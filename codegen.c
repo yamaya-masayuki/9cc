@@ -21,7 +21,7 @@ void gen_lval(Node *node) {
     }
 
     if (node->kind != ND_LVAR)
-        error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_descripion(node));
+        error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_description(node));
 
     // 1. RBPからオフセット分減算する
     printf("  mov rax, rbp   # lvalue\n");
@@ -87,7 +87,7 @@ void gen_fun_impl(Node *node) {
     for (int i = 0; i < node->block->len; ++i) {
         Node *arg = (Node *)node->block->data[i];
         if (arg->kind != ND_LVAR)
-            error_exit("代入の左辺値が変数ではありません(args)。%s", node_descripion(arg));
+            error_exit("代入の左辺値が変数ではありません(args)。%s", node_description(arg));
         printf("  mov qword ptr [rbp - %d], %s  # argument %d\n", arg->offset, ArgRegsiters[i], i);
     }
 
@@ -112,7 +112,7 @@ GenResult gen_impl(Node *node) {
     static int label_sequence_no = 0;
     GenResult result;
 
-    D("%s, nested=%d", node_descripion(node), nested);
+    D("%s, nested=%d", node_description(node), nested);
     nested++;
 
     switch (node->kind) {
@@ -280,19 +280,33 @@ GenResult gen_impl(Node *node) {
         // through
     }
 
+    /*
+     * 二項演算子系
+     */ 
+    node->val = 1;
+    if (node_is_pointer_variable(node->lhs)) {
+        node->val = 4;
+#if 0 // さてどうしよう
+        if (node_is_pointer_of_pointer(node->lhs)) {
+            node->val = 8;
+        }
+#endif
+    }
+
     gen_impl(node->lhs);
     gen_impl(node->rhs);
 
-    /*
-     * 二項演算子系
-     *  スタックに積まれている非演算数を取り出す
-     */ 
+    // スタックに積まれている非演算数を取り出す
     printf("  pop rdi       # binary operator\n");
     printf("  pop rax       # binary operator\n");
 
+    // ポインタの演算のために右手の値をデータサイズ倍する
+    printf("  mov rbx, %-4d # Compute pointer\n", node->val);
+    printf("  imul rax, rbx # Compute pointer\n"); // rax = rax * rdi
+
     switch (node->kind) {
     case ND_ADD:
-        printf("  add rax, rdi  # Addtion\n");
+        printf("  add rax, rdi  # Addition\n");
         break;
     case ND_SUB:
         printf("  sub rax, rdi  # Subtraction\n");

@@ -90,6 +90,9 @@ Node *reference_local_var(Token* t) {
         error_exit("変数が定義されていません: %s\n", t->str);
     }
     node->offset = lvar->offset;
+
+    Type *type_root = lvar->type;
+    node->is_pointer = (type_root && type_root->type == PTR);
     return node;
 }
 
@@ -131,6 +134,7 @@ Node *define_local_var() {
     locals = lvar;
 
     node->offset = lvar->offset;
+    node->is_pointer = (type_root && type_root->type == PTR);
 
     return node;
 }
@@ -418,6 +422,7 @@ Node *code[100];
 static int statement_index = 0;
 
 void program() {
+    D(">> program start");
     statement_index = 0;
     while (!at_eof()) {
         nest_level = 0;
@@ -426,6 +431,7 @@ void program() {
         statement_index++;
     }
     code[statement_index] = NULL;
+    D("<< program end");
 }
 
 // 前方宣言
@@ -488,8 +494,13 @@ Node *pointer() {
         // オペランドについてruiさんの文書ではlhsだが他の演算子との整合性を考慮
         // してrhsにする
         return new_node(ND_ADDR, NULL, unary());
-    else if (consume("*"))
-        return new_node(ND_DEREF, NULL, unary());
+    else if (consume("*")) {
+        Node *node = unary();
+        if (node->kind == ND_LVAR) {
+            node->is_pointer = true;
+        }
+        return new_node(ND_DEREF, NULL, node);
+    }
     return NULL;
 }
 
@@ -588,7 +599,8 @@ Token* tokenize(char *p) {
 
         // ローカル変数
         char *s = p;
-        while ('a' <= *s && *s <= 'z') {
+        while (('a' <= *s && *s <= 'z') ||
+               ('0' <= *s && *s <= '9')) {
             s++;
         }
         if (s != p) {
