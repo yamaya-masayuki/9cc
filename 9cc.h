@@ -185,7 +185,7 @@ extern GenResult gen(Node *node);
 extern Node *code[];
 
 #define D(fmt, ...) \
-    fprintf(stderr, ("%s[%d] " fmt "\n"), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+    fprintf(stderr, ("🐝 %s[%d] " fmt "\n"), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define D_INT(v) \
     do { D(#v "=%d", (v)); fflush(stderr); } while (0)
