@@ -19,7 +19,6 @@ void gen_lval(Node *node) {
         dereferences++;
         node = node->rhs;
     }
-    D("dereferences:%d", dereferences);
 
     if (node->kind != ND_LVAR)
         error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_description(node));
@@ -46,22 +45,10 @@ void gen_fun(Node *node) {
     static char buffer[1024];
 
     for (int i = 0; i < node->block->len; ++i) {
-        Node *argNode = (Node *)node->block->data[i];
-        D("arg-node: %s", node_description(argNode));
-#if 1
-        GenResult result = gen_impl(argNode);
+        GenResult result = gen_impl((Node *)node->block->data[i]);
         assert(result == GEN_PUSHED_RESULT);
         printf("  pop rax\n");
         printf("  mov %s, rax\n", ArgRegsiters[i]);
-#else
-        if (argNode->kind == ND_NUM) { // 整数定数の場合
-            printf("  mov %s, %d\n", ArgRegsiters[i], argNode->val);
-        } else if (argNode->kind == ND_LVAR) { // ローカル変数の場合
-            gen_lval(argNode);
-            printf("  pop rax\n");
-            printf("  mov %s, [rax]\n", ArgRegsiters[i]);
-        }
-#endif
     }
 
     size_t len = MIN(node->identLength,
@@ -121,7 +108,7 @@ GenResult gen_impl(Node *node) {
     static int label_sequence_no = 0;
     GenResult result;
 
-    D("%s, nested=%d", node_description(node), nested);
+    //D("%s, nested=%d", node_description(node), nested);
     nested++;
 
     switch (node->kind) {
@@ -294,12 +281,10 @@ GenResult gen_impl(Node *node) {
      */ 
     node->val = 1;
     if (node_is_pointer_variable(node->lhs)) {
-        node->val = 4;
-#if 0 // さてどうしよう
-        if (node_is_pointer_of_pointer(node->lhs)) {
-            node->val = 8;
+        node->val = 4; // int* のとき
+        if (node_is_pointer_variable_many(node->lhs)) {
+            node->val = 8; // int **以上の時
         }
-#endif
     }
 
     gen_impl(node->lhs);

@@ -67,7 +67,7 @@ typedef struct Node {
     char *ident;        // kindがND_FUNの場合のみ使う(関数名)
     int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
-    bool is_pointer;    // ポインタかどうか(ND_LVARの場合の有効)
+    int num_pointers;    // ポインタかどうか(ND_LVARの場合の有効)
 } Node;
 
 static inline const char* node_description(Node *node) {
@@ -95,7 +95,11 @@ static inline const char* node_description(Node *node) {
 }
 
 static inline bool node_is_pointer_variable(Node *node) {
-    return node->kind == ND_LVAR && node->is_pointer;
+    return node->kind == ND_LVAR && node->num_pointers > 0;
+}
+
+static inline bool node_is_pointer_variable_many(Node *node) {
+    return node->kind == ND_LVAR && node->num_pointers > 1;
 }
 
 // トークンの種類

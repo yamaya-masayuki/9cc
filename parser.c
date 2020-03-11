@@ -13,6 +13,7 @@ typedef struct Type Type;
 struct Type {
     enum { INT, PTR } type; // 型の種別
     Type *ptr_to;           // typeがPTRの時だけ有効
+    int num_pointers;       // ポインタの数
 };
 
 // ローカル変数の型
@@ -94,7 +95,7 @@ Node *reference_local_var(Token* t) {
     node->identLength = lvar->len;
 
     Type *type_root = lvar->type;
-    node->is_pointer = (type_root && type_root->type == PTR);
+    node->num_pointers = (type_root && type_root->type == PTR) ? type_root->num_pointers : 0;
     return node;
 }
 
@@ -102,6 +103,7 @@ Node *define_local_var() {
     // （連続する）ポインタ修飾をパースする
     Type *type_root = NULL;
     Type *type_current = NULL;
+    int num_pointers = 0;
     while (consume("*")) {
         Type *ti = calloc(1, sizeof(Type));
         ti->type = PTR;
@@ -112,6 +114,7 @@ Node *define_local_var() {
             type_current->ptr_to = ti;
         }
         type_current = ti;
+        type_root->num_pointers += 1;
     }
 
     Token *t = consume_ident();
@@ -136,7 +139,7 @@ Node *define_local_var() {
     node->offset = lvar->offset;
     node->ident = lvar->name;
     node->identLength = lvar->len;
-    node->is_pointer = (type_root && type_root->type == PTR);
+    node->num_pointers = (type_root && type_root->type == PTR) ? type_root->num_pointers : 0;
 
     return node;
 }
@@ -503,7 +506,7 @@ Node *pointer() {
     } else if (consume("*")) {
         Node *node = unary();
         if (node->kind == ND_LVAR) {
-            node->is_pointer = true;
+            node->num_pointers = 1; // TODO: あれ？これ必要だっけ？
         }
         return new_node(ND_DEREF, NULL, node);
     }
@@ -609,7 +612,8 @@ Token* tokenize(char *p) {
         // ローカル変数
         char *s = p;
         while (('a' <= *s && *s <= 'z') ||
-               ('0' <= *s && *s <= '9')) {
+               ('0' <= *s && *s <= '9') ||
+               ('_' == *s)) {
             s++;
         }
         if (s != p) {

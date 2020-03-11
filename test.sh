@@ -5,7 +5,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s extern/foo.o extern/alloc4.o
+  gcc -o tmp tmp.s extern/foo.o extern/alloc4.o extern/alloc_ptr3.o
   ./tmp
   actual="$?"
 
@@ -61,6 +61,8 @@ try() {
 #try 0 'foo(7, 8, 9, 10, 11);'
 #try 0 'i = 9; j = 99; foo(i, j);'
 #try 0 'bar(i, j) { return i * j; }'
+#
+# ここから
 try 7 '
 int fun() {
 	return 7;
@@ -148,6 +150,25 @@ int main() {
 	q = p + 3;
 	q = q - 2;
 	return *q;
+}
+'
+try 9 '
+int main() {
+	int x;
+	int y;
+	int z;
+	int **p;
+	int **q;
+	int *r;
+
+	x = 3;
+	y = 6;
+	z = 9;
+	alloc_ptr3(&p, &x, &y, &z);
+
+	q = p + 2;
+	r = *q;
+	return *r;
 }
 '
 
