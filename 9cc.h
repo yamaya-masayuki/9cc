@@ -79,6 +79,9 @@ static inline const char* node_description(Node *node) {
         const int n = MIN(sizeof(tmp) - 1, node->identLength);
         memcpy(tmp, node->ident, n);
         tmp[n] = '\0';
+    } else if (node->kind == ND_NUM) {
+        const int n = sprintf(tmp, "%d", node->val);
+        tmp[n] = '\0';
     }
 
     sprintf(buffer, "%-8s '%-6s' %3d %14p/%14p/%14p",
@@ -149,9 +152,13 @@ static inline const char *TokenDescription(Token *token) {
     static char buffer[1024];
     static char tmp[1024];
 
-    const int length = MIN(sizeof(tmp) - 1, token->len);
-    memcpy(tmp, token->str, length);
-    tmp[length] = '\0';
+    if (!token) {
+        return "null";
+    }
+
+    const int n = MIN(sizeof(tmp) - 1, token->len);
+    memcpy(tmp, token->str, n);
+    tmp[n] = '\0';
     
     sprintf(buffer, "Token: %s, `%s`, %p",
             TokenKindDescription(token->kind),

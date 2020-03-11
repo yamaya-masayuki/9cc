@@ -19,6 +19,7 @@ void gen_lval(Node *node) {
         dereferences++;
         node = node->rhs;
     }
+    D("dereferences:%d", dereferences);
 
     if (node->kind != ND_LVAR)
         error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_description(node));
@@ -46,6 +47,13 @@ void gen_fun(Node *node) {
 
     for (int i = 0; i < node->block->len; ++i) {
         Node *argNode = (Node *)node->block->data[i];
+        D("arg-node: %s", node_description(argNode));
+#if 1
+        GenResult result = gen_impl(argNode);
+        assert(result == GEN_PUSHED_RESULT);
+        printf("  pop rax\n");
+        printf("  mov %s, rax\n", ArgRegsiters[i]);
+#else
         if (argNode->kind == ND_NUM) { // 整数定数の場合
             printf("  mov %s, %d\n", ArgRegsiters[i], argNode->val);
         } else if (argNode->kind == ND_LVAR) { // ローカル変数の場合
@@ -53,6 +61,7 @@ void gen_fun(Node *node) {
             printf("  pop rax\n");
             printf("  mov %s, [rax]\n", ArgRegsiters[i]);
         }
+#endif
     }
 
     size_t len = MIN(node->identLength,

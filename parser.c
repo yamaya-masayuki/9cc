@@ -99,8 +99,6 @@ Node *reference_local_var(Token* t) {
 }
 
 Node *define_local_var() {
-    D("token: %s", TokenDescription(token));
-
     // （連続する）ポインタ修飾をパースする
     Type *type_root = NULL;
     Type *type_current = NULL;
@@ -263,29 +261,37 @@ Token* equal(Token* t, TokenKind kind, const char *str) {
     return NULL;
 }
 
-Node *declare_function(Token *indentifier) {
+Node *term();
+
+Node *calling_function(Token *indentifier) {
     if (indentifier) {
+        assert(token == indentifier->next);
         // `()`を先読みしてあれば関数ノードを作成する
-        Token* openParen = equal(indentifier->next, TK_RESERVED, "(");
-        if (openParen) {
-            Token *closeParen = NULL;
+        Token* open_paren = equal(indentifier->next, TK_RESERVED, "(");
+        if (open_paren) {
+            Token *close_paren = NULL;
             Vector *args = new_vec();
-            for (Token* at = openParen->next; at; at = at->next) {
-                if (at->kind == TK_IDENT) {
-                    vec_push(args, reference_local_var(at));
-                } else if (at->kind == TK_NUM) {
-                    vec_push(args, new_node_num(at->val));
-                    at->val = 1; // 関数呼び出し確定とする
-                } else {
-                    closeParen = equal(at, TK_RESERVED, ")");
-                    if (closeParen) {
-                        break;
-                    } else if (!equal(at, TK_RESERVED, ",")) {
-                        error_exit("関数呼び出しシンタックスエラー: %s\n", at->str);
-                    }
+            for (Token* at = open_paren->next; at; at = at->next) {
+                if (token != at) {
+                    token = at;
+                }
+                close_paren = equal(at, TK_RESERVED, ")"); // peek
+                if (close_paren) {
+                    break;
+                }
+                if (equal(at, TK_RESERVED, ",")) { // peek
+                    continue;
+                }
+                Node* node = term();
+                vec_push(args, node);
+                at = token;
+                // termでtokenが進んでしまうのでここでもう一度")"をチェックしないと...
+                close_paren = equal(at, TK_RESERVED, ")"); // peek
+                if (close_paren) {
+                    break;
                 }
             }
-            token = closeParen->next;
+            token = close_paren->next;
             Node *node = new_node(ND_FUN, NULL, NULL);
             node->ident = indentifier->str;
             node->identLength = indentifier->len;
@@ -307,7 +313,6 @@ Node *define_function(Token *indentifier) {
             Vector *args = new_vec();
             int type_declared = 0;
             for (Token* at = openParen->next; at; at = at->next) {
-                D("%s", TokenDescription(at));
                 if (at->kind == TK_INT) {
                     // 引数の型は単なる読み捨て
                     type_declared = 1;
@@ -315,7 +320,6 @@ Node *define_function(Token *indentifier) {
                     if (!type_declared)
                         error_exit("関数定義シンタックスエラー: %s\n", at->str);
                     type_declared = 0;
-                    D("at: %s", TokenDescription(at));
                     token = at; // Ad-Hocすぎる...
                     vec_push(args, define_local_var());
                 } else {
@@ -464,8 +468,8 @@ Node *term() {
     // 識別子
     Token *t = consume_ident();
     if (t) {
-        // 関数宣言ノード
-        Node *node = declare_function(t);
+        // 関数呼び出しノード
+        Node *node = calling_function(t);
         if (!node) {
             // ローカル変数
             node = reference_local_var(t);
@@ -492,11 +496,11 @@ Node *unary() {
 }
 
 Node *pointer() {
-    if (consume("&"))
+    if (consume("&")) {
         // オペランドについてruiさんの文書ではlhsだが他の演算子との整合性を考慮
         // してrhsにする
         return new_node(ND_ADDR, NULL, unary());
-    else if (consume("*")) {
+    } else if (consume("*")) {
         Node *node = unary();
         if (node->kind == ND_LVAR) {
             node->is_pointer = true;
@@ -595,7 +599,10 @@ Token* tokenize(char *p) {
         // 数値
         if (isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 1);
-            cur->val = strtol(p, &p, 10);
+            char *q = p;
+            cur->val = strtol(p, &q, 10);
+            cur->len = q - p;
+            p = q;
             continue;
         }
 

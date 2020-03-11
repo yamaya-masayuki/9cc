@@ -79,12 +79,12 @@ int main() {
 	return fun() + 1;
 }
 '
-try 4 '
+try 12 '
 int fun(int i) {
 	return i + 3;
 }
 int main() {
-	return fun(1);
+	return fun(9);
 }
 '
 try 55 '
@@ -120,7 +120,6 @@ int main() {
 	return fun(10, 100);
 }
 '
-
 try 3 '
 int main() {
 	int x;
@@ -132,13 +131,10 @@ int main() {
 	return x;
 }
 '
-
 try 8 '
 int main() {
 	int *p;
-	int **pp;
-	pp = &p;
-	alloc4(pp, 1, 2, 4, 8);
+	alloc4(&p, 1, 2, 4, 8);
 	int *q;
 	q = p + 3;
 	return *q;

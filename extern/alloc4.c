@@ -8,7 +8,8 @@ typedef unsigned long long T; // レジスタの型 = 8byte
 static int buffer[N];
 
 extern T alloc4(int **r, T a, T b, T c, T d) {
-    //fprintf(stderr, ">> r=%p a=%llu b=%llu c=%llu d=%llu sizeof(int)=%ld\n", r, a, b, c, d, sizeof(int));
+    assert(sizeof(int **) == sizeof(T));
+    //fprintf(stderr, ">> r=%p a=%llu b=%llu c=%llu d=%llu sizeof(T)=%ld\n", r, a, b, c, d, sizeof(b));
     buffer[0] = a;
     buffer[1] = b;
     buffer[2] = c;
