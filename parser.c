@@ -1,20 +1,10 @@
 #include "9cc.h"
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
 // 現在のパース位置がトップレベルかどうか
 static int nest_level = 0;
-
-// 型
-typedef struct Type Type;
-struct Type {
-    enum { INT, PTR, ARRAY } type; // 型の種別
-    Type *ptr_to;           // typeがPTRの時だけ有効
-    int num_pointers;       // ポインタの数
-    int num_elements;       // 配列の要素数
-};
 
 // ローカル変数の型
 typedef struct LVar LVar;

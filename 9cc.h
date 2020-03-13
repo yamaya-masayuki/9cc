@@ -1,10 +1,37 @@
 #include "vector.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 // MINマクロ
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+// 型
+typedef struct Type {
+    enum { INT, PTR, ARRAY } type; // 型の種別
+    struct Type *ptr_to;    // typeがPTRの時だけ有効
+    int num_pointers;       // ポインタの数
+    int num_elements;       // 配列の要素数
+} Type;
+
+static inline const char* type_description(Type *type) {
+    static const char* description[] = {
+        "INT", "PTR", "ARRAY"
+    };
+    static char buffer[1024];
+
+    if (!type) {
+        return "null.";
+    }
+
+    sprintf(buffer, "%-5s %p %d %d",
+            description[type->type],
+            type->ptr_to,
+            type->num_pointers,
+            type->num_elements);
+    return buffer;
+}
 
 // 抽象構文木のノードの種類
 typedef enum {
