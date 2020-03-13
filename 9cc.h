@@ -1,6 +1,7 @@
 #include "vector.h"
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 // MINマクロ
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -99,12 +100,16 @@ static inline const char* node_description(Node *node) {
     return buffer;
 }
 
+static inline int node_num_pointers(Node *node) {
+    return node->kind == ND_LVAR ? node->num_pointers : 0;
+}
+
 static inline bool node_is_pointer_variable(Node *node) {
-    return node->kind == ND_LVAR && node->num_pointers > 0;
+    return node_num_pointers(node) > 0;
 }
 
 static inline bool node_is_pointer_variable_many(Node *node) {
-    return node->kind == ND_LVAR && node->num_pointers > 1;
+    return node_num_pointers(node) > 1;
 }
 
 // トークンの種類

@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 
 // 現在のパース位置がトップレベルかどうか
 static int nest_level = 0;
@@ -533,7 +532,7 @@ int sizeof_ast(Node *node) {
         return 0;
     }
     if (node->kind == ND_LVAR) {
-        return node->num_pointers > 0 ? 8 : 4;
+        return node_num_pointers(node) > 0 ? 8 : 4;
     }
     if (node->kind == ND_DEREF || node->kind == ND_NUM) {
         return 4;
