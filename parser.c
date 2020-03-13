@@ -132,8 +132,10 @@ Node *define_local_var() {
 
     // 配列かどうか
     if (consume("[")) {
+        int n = 0;
         Token *number_token = consume_by_kind(TK_NUM);
         if (number_token) {
+            n = number_token->val; 
             number_token = consume_reserved("]");
         }
         if (!number_token) {
@@ -144,7 +146,7 @@ Node *define_local_var() {
 
         type_root = calloc(1, sizeof(Type));
         type_root->type = ARRAY;
-        type_root->num_elements = number_token->val; 
+        type_root->num_elements = n;
     }
 
     // ここまできて型がなければINTで作る
@@ -154,19 +156,27 @@ Node *define_local_var() {
     }
 
     // LVarの生成
-    LVar *local = calloc(1, sizeof(LVar));
-    local->next = locals;
-    local->name = ident_token->str;
-    local->len = ident_token->len;
-    local->offset = (!locals ? 0 : locals->offset) + 8;
-    local->type = type_root;
-    locals = local;
+    LVar *var = calloc(1, sizeof(LVar));
+    var->next = locals;
+    var->name = ident_token->str;
+    var->len = ident_token->len;
+    var->type = type_root;
+    if (locals) { // オフセット計算
+        var->offset = locals->offset;
+        if (var->type->type == ARRAY) {
+            int type_size = 8; // 現状INTだけだから
+            var->offset += type_size * var->type->num_elements;
+        }
+    }
+    var->offset += 8;
+
+    locals = var;
 
     // Nodeの生成
     Node *node = new_node(ND_LVAR, NULL, NULL);
-    node->offset = local->offset;
-    node->ident = local->name;
-    node->identLength = local->len;
+    node->offset = var->offset;
+    node->ident = var->name;
+    node->identLength = var->len;
     node->type = type_root;
 
     D_NODE(node);

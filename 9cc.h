@@ -95,7 +95,7 @@ typedef struct Node {
     char *ident;        // kindがND_FUNの場合のみ使う(関数名)
     int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
-    Type *type;
+    Type *type;         // 型情報
 } Node;
 
 static inline const char* node_description(Node *node) {
