@@ -279,11 +279,11 @@ GenResult gen_impl(Node *node) {
     /*
      * 二項演算子系
      */ 
-    node->val = 1;
+    int ptr_offset = 1;
     if (node_is_pointer_variable(node->lhs)) {
-        node->val = 4; // int* のとき
+        ptr_offset = 4; // int* のとき
         if (node_is_pointer_variable_many(node->lhs)) {
-            node->val = 8; // int **以上の時
+            ptr_offset = 8; // int **以上の時
         }
     }
 
@@ -295,7 +295,7 @@ GenResult gen_impl(Node *node) {
     printf("  pop rax       # binary operator\n"); // 左手
 
     // ポインタの演算のために右手(rdi)をデータサイズ倍する
-    printf("  mov rbx, %-4d # Compute pointer\n", node->val);
+    printf("  mov rbx, %-4d # Compute pointer\n", ptr_offset);
     printf("  imul rdi, rbx # Compute pointer\n"); // rdi = rdi * rbx
 
     switch (node->kind) {

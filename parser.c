@@ -86,17 +86,16 @@ Token* consume_reserved(char *c) {
 }
 
 Node *reference_local_var(Token* t) {
-    Node *node = new_node(ND_LVAR, NULL, NULL);
-    LVar *lvar = find_lvar(t);
-    if (lvar == NULL) {
+    LVar *local = find_lvar(t);
+    if (!local) {
         error_exit("変数が定義されていません: %s\n", t->str);
     }
-    node->offset = lvar->offset;
-    node->ident = lvar->name;
-    node->identLength = lvar->len;
 
-    Type *type_root = lvar->type;
-    node->num_pointers = (type_root && type_root->type == PTR) ? type_root->num_pointers : 0;
+    Node *node = new_node(ND_LVAR, NULL, NULL);
+    node->offset = local->offset;
+    node->ident = local->name;
+    node->identLength = local->len;
+    node->type = local->type;
     return node;
 }
 
@@ -148,21 +147,27 @@ Node *define_local_var() {
         type_root->num_elements = number_token->val; 
     }
 
+    // ここまできて型がなければINTで作る
+    if (!type_root) {
+        type_root = calloc(1, sizeof(Type));
+        type_root->type = INT;
+    }
+
     // LVarの生成
-    LVar *var = calloc(1, sizeof(LVar));
-    var->next = locals;
-    var->name = ident_token->str;
-    var->len = ident_token->len;
-    var->offset = (!locals ? 0 : locals->offset) + 8;
-    var->type = type_root;
-    locals = var;
+    LVar *local = calloc(1, sizeof(LVar));
+    local->next = locals;
+    local->name = ident_token->str;
+    local->len = ident_token->len;
+    local->offset = (!locals ? 0 : locals->offset) + 8;
+    local->type = type_root;
+    locals = local;
 
     // Nodeの生成
     Node *node = new_node(ND_LVAR, NULL, NULL);
-    node->offset = var->offset;
-    node->ident = var->name;
-    node->identLength = var->len;
-    node->num_pointers = (type_root && type_root->type == PTR) ? type_root->num_pointers : 0;
+    node->offset = local->offset;
+    node->ident = local->name;
+    node->identLength = local->len;
+    node->type = type_root;
 
     D_NODE(node);
     return node;

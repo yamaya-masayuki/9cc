@@ -25,7 +25,7 @@ static inline const char* type_description(Type *type) {
         return "null.";
     }
 
-    sprintf(buffer, "%-5s %p %d %d",
+    sprintf(buffer, "%-5s %-14p %d %d",
             description[type->type],
             type->ptr_to,
             type->num_pointers,
@@ -95,7 +95,7 @@ typedef struct Node {
     char *ident;        // kindがND_FUNの場合のみ使う(関数名)
     int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
-    int num_pointers;    // ポインタかどうか(ND_LVARの場合の有効)
+    Type *type;
 } Node;
 
 static inline const char* node_description(Node *node) {
@@ -116,11 +116,11 @@ static inline const char* node_description(Node *node) {
         tmp[n] = '\0';
     }
 
-    sprintf(buffer, "%-8s '%-6s' %3d %2d %14p/%14p/%14p",
+    sprintf(buffer, "%-8s '%-6s' {%-s} %3d %14p/%14p/%14p",
             node_kind_descripion(node->kind),
             tmp,
+            type_description(node->type),
             node->offset,
-            node->num_pointers,
             node->lhs,
             node->rhs,
             node->condition);
@@ -128,7 +128,9 @@ static inline const char* node_description(Node *node) {
 }
 
 static inline int node_num_pointers(Node *node) {
-    return node->kind == ND_LVAR ? node->num_pointers : 0;
+    return node->kind == ND_LVAR &&
+           node->type &&
+           node->type->type == PTR ? node->type->num_pointers : 0;
 }
 
 static inline bool node_is_pointer_variable(Node *node) {
