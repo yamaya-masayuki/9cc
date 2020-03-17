@@ -164,7 +164,7 @@ Node *define_local_var() {
     if (locals) { // オフセット計算
         var->offset = locals->offset;
         if (var->type->type == ARRAY) {
-            int type_size = 8; // 現状INTだけだから
+            int type_size = 4; // 現状INTだけだから
             var->offset += type_size * var->type->num_elements;
         }
     }
