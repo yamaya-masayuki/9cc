@@ -133,8 +133,13 @@ static inline int node_num_pointers(Node *node) {
            node->type->type == PTR ? node->type->num_pointers : 0;
 }
 
-static inline bool node_is_pointer_variable(Node *node) {
-    return node_num_pointers(node) > 0;
+// ポインタとして扱うかどうか
+static inline bool node_is_treat_pointer(Node *node) {
+    if (node->kind == ND_LVAR) {
+        Type *ti = node->type;
+        return ti->type == PTR || ti->type == ARRAY;
+    }
+    return false;
 }
 
 static inline bool node_is_pointer_variable_many(Node *node) {

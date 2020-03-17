@@ -12,6 +12,7 @@ static GenResult gen_impl(Node *);
  * れることになります。
  */
 void gen_lval(Node *node) {
+    D_NODE(node);
     // 0. デリファレンスの場合、ND_LVARに到達するまでの回数（すなわち`*`）を数
     //    える
     int dereferences = 0;
@@ -20,8 +21,9 @@ void gen_lval(Node *node) {
         node = node->rhs;
     }
 
-    if (node->kind != ND_LVAR)
+    if (node->kind != ND_LVAR) {
         error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_description(node));
+    }
 
     // 1. RBPからオフセット分減算する
     printf("  mov rax, rbp   # lvalue\n");
@@ -280,7 +282,7 @@ GenResult gen_impl(Node *node) {
      * 二項演算子系
      */ 
     int ptr_offset = 1;
-    if (node_is_pointer_variable(node->lhs)) {
+    if (node_is_treat_pointer(node->lhs)) {
         ptr_offset = 4; // int* のとき
         if (node_is_pointer_variable_many(node->lhs)) {
             ptr_offset = 8; // int **以上の時
