@@ -12,7 +12,6 @@ static GenResult gen_impl(Node *);
  * れることになります。
  */
 void gen_lval(Node *node) {
-    D_NODE(node);
     // 0. デリファレンスの場合、ND_LVARに到達するまでの回数（すなわち`*`）を数
     //    える
     int dereferences = 0;
@@ -110,7 +109,7 @@ GenResult gen_impl(Node *node) {
     static int label_sequence_no = 0;
     GenResult result;
 
-    //D("%s, nested=%d", node_description(node), nested);
+    D("%s, nested=%d", node_description(node), nested);
     nested++;
 
     switch (node->kind) {

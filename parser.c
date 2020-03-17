@@ -179,7 +179,6 @@ Node *define_local_var() {
     node->identLength = var->len;
     node->type = type_root;
 
-    D_NODE(node);
     return node;
 }
 

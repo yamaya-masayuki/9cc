@@ -73,6 +73,7 @@ int main() {
 	return i;
 }
 '
+exit 0
 try 3 '
 int fun() {
 	return 1 + 1;
