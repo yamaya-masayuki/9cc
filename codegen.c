@@ -11,33 +11,17 @@ static GenResult gen_impl(Node *);
  * それ以外の場合にはエラーを表示します。これにより`(a+1)=2`のような式が排除さ
  * れることになります。
  */
-void gen_lval(Node *node) {
-    // 0. デリファレンスの場合、ND_LVARに到達するまでの回数（すなわち`*`）を数
-    //    える
-    int dereferences = 0;
-    while (node->kind == ND_DEREF) {
-        dereferences++;
-        node = node->rhs;
-    }
-
+void gen_address_to_local_variable(Node *node) {
     if (node->kind != ND_LVAR) {
-        error_exit("代入の左辺値が変数ではありません(lvalue)。%s", node_description(node));
+        error_exit("代入の左辺値が変数ではありません(var)。%s", node_description(node));
     }
 
     // 1. RBPからオフセット分減算する
-    printf("  mov rax, rbp   # lvalue\n");
-    printf("  sub rax, %-4d  # lvalue\n", node->offset);
+    printf("  mov rax, rbp   # var\n");
+    printf("  sub rax, %-4d  # var\n", node->offset);
 
     // 2. 結果（変数のアドレス）をスタックに積む
-    printf("  push rax       # lvalue\n");
-
-    // 3. デリファレンスの場合は変数の実体のアドレスに到達するまでスタックに積
-    //    む
-    for (int i = 0; i < dereferences; ++i) {
-        printf("  pop rax        # lvalue(dereference)\n");
-        printf("  mov rax, [rax] # lvalue(dereference)\n");
-        printf("  push rax       # lvalue\n");
-    }
+    printf("  push rax       # var\n");
 }
 
 static const char *ArgRegsiters[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
@@ -91,11 +75,6 @@ void gen_fun_impl(Node *node) {
     // ブロック部分: node->lhsにはND_BLOCKが格納されている
     for (int i = 0; i < node->lhs->block->len; ++i) {
         GenResult resutl = gen_impl(node->lhs->block->data[i]);
-        // gen_implが結果をスタックに積んだ場合は取り除いてRAXに入れ関数の戻り
-        // 値とする
-        if (resutl == GEN_PUSHED_RESULT) {
-            printf("  pop rax  # block's result\n");
-        }
     }
 
     // エピローグ
@@ -118,18 +97,22 @@ GenResult gen_impl(Node *node) {
         nested--;
         return GEN_PUSHED_RESULT;
     case ND_LVAR:
-        printf("  # Left value {{{\n");
+        printf("  # variable {{{ type=%s\n", type_description(node->type));
         /*
          * 変数の参照
-         * - 左辺の変数のアドレスをスタックに置く ~ gen_lval()
-         * - スタックをポップする
-         * - その値をアドレスとみなし参照先の値を取得する
+         * - 左辺の変数のアドレスをスタックに置く ~ gen_address_to_local_variable()
+         * - 配列ではない場合に限り...
+         *  * スタックをポップする
+         *  * その値をアドレスとみなし参照先の値を取得する)
+         *  - 配列は"初期化済のポインタ変数"なので特別扱いする
          */
-        gen_lval(node);
-        printf("  pop rax        # lvalue(outside)\n");
-        printf("  mov rax, [rax] # lvalue(outside)\n");
-        printf("  push rax       # lvalue(outside)\n");
-        printf("  # }}} Left value\n");
+        gen_address_to_local_variable(node);
+        if (node->type->type != ARRAY) {
+            printf("  pop rax        # var(outside)\n");
+            printf("  mov rax, [rax] # var(outside)\n");
+            printf("  push rax       # var(outside)\n");
+        }
+        printf("  # }}} variable\n");
         nested--;
         return GEN_PUSHED_RESULT;
 
@@ -137,14 +120,26 @@ GenResult gen_impl(Node *node) {
         printf("  # Assign {{{\n");
         /*
          * 変数への代入
-         * - 左辺の変数のアドレスをスタックに置く ~ gen_lval()
+         * - 左辺の変数のアドレスをスタックに置く ~ gen_address_to_local_variable()
          * - 右辺を評価し結果をスタックに置く ~ gen_impl()
          * - スタックをポップし右辺値をrbxへ
          * - スタックをポップし変数アドレスをraxへ
          * - raxアドレスにrbx値を書く
          * - rbx値をスタックに置く
          */
-        gen_lval(node->lhs); // スタックにLHSのアドレスを入れたままにしておく
+        switch (node->lhs->kind) {
+        case ND_DEREF:
+            // 直接rhsをコード生成するのがミソ
+            gen_impl(node->lhs->rhs);
+            break;
+        case ND_LVAR:
+            // スタックにLHSのアドレスを入れたままにしておく
+            gen_address_to_local_variable(node->lhs);
+            break;
+        default:
+            error_exit("代入の左辺値は変数またはデリファレンス演算子でなければなりません。%s", node_description(node->lhs));
+            break;
+        }
         result = gen_impl(node->rhs); // スタックに右辺の評価結果が積まれている
         assert(result == GEN_PUSHED_RESULT); // ここでのgen_implは必ずスタックに結果をプッシュしなければならない
         printf("  pop rbx        # assign\n"); // 右辺(の結果)
@@ -259,14 +254,14 @@ GenResult gen_impl(Node *node) {
         return GEN_DONT_PUSHED_RESULT;
     case ND_ADDR:
         printf("  # Address {{{\n");
-        gen_lval(node->rhs);
+        gen_address_to_local_variable(node->rhs);
         nested--;
         printf("  # }}} Address\n");
         return GEN_PUSHED_RESULT;
     case ND_DEREF:
         printf("  # Dereference {{{\n");
-        gen_impl(node->rhs);
-        printf("  pop rax\n");
+        gen_impl(node->rhs); // 右辺値としてコンパイルする
+        printf("  pop rax         # dereference(outside)\n");
         printf("  mov rax, [rax]  # dereference(outside)\n");
         printf("  push rax        # dereference(outside)\n");
         printf("  # }}} Dereference\n");
@@ -338,7 +333,7 @@ GenResult gen_impl(Node *node) {
         // through
     }
 
-    printf("  push rax  # gem_impl's LAST\n");
+    printf("  push rax  # gen_impl's LAST\n");
     nested--;
     return GEN_PUSHED_RESULT;
 }
