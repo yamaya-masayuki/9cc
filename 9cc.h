@@ -9,9 +9,8 @@
 
 // 型
 typedef struct Type {
-    enum { INT, PTR, ARRAY } type; // 型の種別
+    enum TypeKind { INT, PTR, ARRAY } type; // 型の種別
     struct Type *ptr_to;    // typeがPTRの時だけ有効
-    int num_pointers;       // ポインタの数
     int num_elements;       // 配列の要素数
 } Type;
 
@@ -25,12 +24,32 @@ static inline const char* type_description(Type *type) {
         return "null.";
     }
 
-    sprintf(buffer, "%-5s %-14p %d %d",
+    sprintf(buffer, "%-5s %-14p %d",
             description[type->type],
             type->ptr_to,
-            type->num_pointers,
             type->num_elements);
     return buffer;
+}
+
+static inline Type* new_type(enum TypeKind tk) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = tk;
+    return type;
+}
+
+static inline Type* new_ptr_type(Type* original_type) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = PTR;
+    type->ptr_to = original_type;
+    return type;
+}
+
+static inline Type* new_array_type(int n, Type* original_type) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = ARRAY;
+    type->ptr_to = original_type;
+    type->num_elements = n;
+    return type;
 }
 
 // 抽象構文木のノードの種類
@@ -128,9 +147,13 @@ static inline const char* node_description(Node *node) {
 }
 
 static inline int node_num_pointers(Node *node) {
-    return node->kind == ND_LVAR &&
-           node->type &&
-           node->type->type == PTR ? node->type->num_pointers : 0;
+    int n = 0;
+    if (node->kind == ND_LVAR && node->type->type == PTR) {
+        for (Type *t = node->type->ptr_to; t; t = t->ptr_to) {
+            n++;
+        }
+    }
+    return n;
 }
 
 // ポインタとして扱うかどうか

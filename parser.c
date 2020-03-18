@@ -103,20 +103,14 @@ Node *reference_local_var(Token* t) {
  * ローカル変数の定義
  */
 Node *define_local_var() {
+    // まずINT型の型情報を作る
+    Type* type_original = new_type(INT);
+
     // （連続する）ポインタ修飾をパースする
-    Type *type_root = NULL;
-    Type *type_current = NULL;
+    Type *type_current = type_original;
     while (consume("*")) {
-        Type *ti = calloc(1, sizeof(Type));
-        ti->type = PTR;
-        if (!type_root) {
-            type_root = ti;
-        }
-        if (type_current) {
-            type_current->ptr_to = ti;
-        }
-        type_current = ti;
-        type_root->num_pointers += 1;
+        Type *ptr_type = new_ptr_type(type_current);
+        type_current = ptr_type;
     }
 
     // 識別子
@@ -141,18 +135,7 @@ Node *define_local_var() {
         if (!number_token) {
             error_exit("配列の定義が間違っています: %s\n", token->str);
         }
-        // FIXME ポインタ修飾と配列は同時に定義できないものとする
-        assert(!type_root);
-
-        type_root = calloc(1, sizeof(Type));
-        type_root->type = ARRAY;
-        type_root->num_elements = n;
-    }
-
-    // ここまできて型がなければINTで作る
-    if (!type_root) {
-        type_root = calloc(1, sizeof(Type));
-        type_root->type = INT;
+        type_current = new_array_type(n, type_current);
     }
 
     // LVarの生成
@@ -160,7 +143,7 @@ Node *define_local_var() {
     var->next = locals;
     var->name = ident_token->str;
     var->len = ident_token->len;
-    var->type = type_root;
+    var->type = type_current;
     if (locals) { // オフセット計算
         var->offset = locals->offset;
         if (var->type->type == ARRAY) {
@@ -177,7 +160,7 @@ Node *define_local_var() {
     node->offset = var->offset;
     node->ident = var->name;
     node->identLength = var->len;
-    node->type = type_root;
+    node->type = type_current;
 
     return node;
 }
