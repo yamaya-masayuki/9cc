@@ -276,15 +276,22 @@ GenResult gen_impl(Node *node) {
      * 二項演算子系
      */ 
     int ptr_offset = 1;
-    if (node_is_treat_pointer(node->lhs)) {
+    if (node_hands_is_treat_pointer(node)) {
         ptr_offset = 4; // int* のとき
-        if (node_is_pointer_variable_many(node->lhs)) {
+        if (node_hands_is_pointer_variable_many(node)) {
             ptr_offset = 8; // int **以上の時
         }
     }
 
-    gen_impl(node->lhs);
-    gen_impl(node->rhs);
+    // (1 + p)のように左手に定数がくる場合は処理順を逆にする
+    // 後続のptr_offset計算のため
+    if (ptr_offset != 1 && node->lhs->kind == ND_NUM) {
+        gen_impl(node->rhs);
+        gen_impl(node->lhs);
+    } else {
+        gen_impl(node->lhs);
+        gen_impl(node->rhs);
+    }
 
     // スタックに積まれている非演算数を取り出す
     printf("  pop rdi       # binary operator\n"); // 右手

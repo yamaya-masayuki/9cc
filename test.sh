@@ -138,7 +138,7 @@ int main() {
 	int *p;
 	alloc4(&p, 1, 2, 4, 8);
 	int *q;
-	q = p + 3;
+	q = 3 + p;
 	return *q;
 }
 '
@@ -226,6 +226,24 @@ int main() {
 	*(a + 1) = 2;
 	p = a;
 	return *p + *(p + 1);
+}
+'
+try 3 '
+int main() {
+	int a[2];
+
+	a[0] = 1;
+	a[1] = 2;
+	return a[0] + a[1];
+}
+'
+try 7 '
+int main() {
+	int a[2];
+
+	a[0] = 9;
+	a[1] = 7;
+	return 1[a];
 }
 '
 

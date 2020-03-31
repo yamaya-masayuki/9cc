@@ -85,6 +85,8 @@ Token* consume_reserved(char *c) {
     return NULL;
 }
 
+Node *expr();
+
 Node *reference_local_var(Token* t) {
     LVar *local = find_lvar(t);
     if (!local) {
@@ -96,6 +98,22 @@ Node *reference_local_var(Token* t) {
     node->ident = local->name;
     node->identLength = local->len;
     node->type = local->type;
+#if 0
+    // TODO: '[]' で囲まれたものがあるなら配列添え字とみなす
+    // `x[y]`は`*(x+y)`と等価であるものとして定義する
+    if (consume("[")) {
+        Node *index_node = expr();
+        if (!index_node) {
+            error_exit("配列の添え字指定がありません: %s\n", t->str);
+        }
+        if (consume("]")) {
+            Node *add_node = new_node(ND_ADD, node, index_node);
+            node = new_node(ND_DEREF, NULL, add_node);
+        } else {
+            error_exit("配列の添え字指定が間違っています: %s\n", t->str);
+        }
+    }
+#endif
     return node;
 }
 
@@ -205,16 +223,16 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 }
 
 // 前方宣言
-Node *mul();
+Node *indexing();
 
 Node *add() {
-    Node *node = mul();
+    Node *node = indexing();
 
     for (;;) {
         if (consume("+"))
-            node = new_node(ND_ADD, node, mul());
+            node = new_node(ND_ADD, node, indexing());
         else if (consume("-"))
-            node = new_node(ND_SUB, node, mul());
+            node = new_node(ND_SUB, node, indexing());
         else
             return node;
     }
@@ -469,6 +487,30 @@ void program() {
 // 前方宣言
 Node *unary();
 Node *pointer();
+Node *mul();
+
+Node *indexing() {
+    Node *node = mul(); // 1
+
+    for (;;) {
+        // TODO: '[]' で囲まれたものがあるなら配列添え字とみなす
+        // `x[y]`は`*(x+y)`と等価であるものとして定義する
+        if (consume("[")) {
+            Node *index_node = expr();
+            if (!index_node) {
+                error_exit("配列の添え字指定がありません: %s\n", token->str);
+            }
+            if (consume("]")) {
+                Node *add_node = new_node(ND_ADD, node, index_node);
+                return new_node(ND_DEREF, NULL, add_node);
+            } else {
+                error_exit("配列の添え字指定が間違っています: %s\n", token->str);
+            }
+        }
+        else
+            return node;
+    }
+}
 
 Node *mul() {
     Node *node = unary();
@@ -497,7 +539,7 @@ Node *term() {
         // 関数呼び出しノード
         Node *node = calling_function(t);
         if (!node) {
-            // ローカル変数
+            // ローカル変数 or 配列添え字演算
             node = reference_local_var(t);
         }
         return node;

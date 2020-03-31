@@ -165,8 +165,16 @@ static inline bool node_is_treat_pointer(Node *node) {
     return false;
 }
 
+static inline bool node_hands_is_treat_pointer(Node *node) {
+    return node_is_treat_pointer(node->lhs) || node_is_treat_pointer(node->rhs);
+}
+
 static inline bool node_is_pointer_variable_many(Node *node) {
     return node_num_pointers(node) > 1;
+}
+
+static inline bool node_hands_is_pointer_variable_many(Node *node) {
+    return node_is_pointer_variable_many(node->lhs) || node_is_pointer_variable_many(node->rhs);
 }
 
 // トークンの種類
