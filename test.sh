@@ -211,5 +211,22 @@ int main() {
 	return sizeof(sizeof(1));
 }
 '
+try 0 '
+int main() {
+	int a[10];
+	return 0;
+}
+'
+try 3 '
+int main() {
+	int a[2];
+	int *p;
+
+	*a = 1;
+	*(a + 1) = 2;
+	p = a;
+	return *p + *(p + 1);
+}
+'
 
 echo DONE

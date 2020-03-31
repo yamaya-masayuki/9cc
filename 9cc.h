@@ -1,9 +1,56 @@
 #include "vector.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 // MINマクロ
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+// 型
+typedef struct Type {
+    enum TypeKind { INT, PTR, ARRAY } type; // 型の種別
+    struct Type *ptr_to;    // typeがPTRの時だけ有効
+    int num_elements;       // 配列の要素数
+} Type;
+
+static inline const char* type_description(Type *type) {
+    static const char* description[] = {
+        "INT", "PTR", "ARRAY"
+    };
+    static char buffer[1024];
+
+    if (!type) {
+        return "null.";
+    }
+
+    sprintf(buffer, "%-5s %-14p %d",
+            description[type->type],
+            type->ptr_to,
+            type->num_elements);
+    return buffer;
+}
+
+static inline Type* new_type(enum TypeKind tk) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = tk;
+    return type;
+}
+
+static inline Type* new_ptr_type(Type* original_type) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = PTR;
+    type->ptr_to = original_type;
+    return type;
+}
+
+static inline Type* new_array_type(int n, Type* original_type) {
+    Type* type = calloc(1, sizeof(Type));
+    type->type = ARRAY;
+    type->ptr_to = original_type;
+    type->num_elements = n;
+    return type;
+}
 
 // 抽象構文木のノードの種類
 typedef enum {
@@ -67,7 +114,7 @@ typedef struct Node {
     char *ident;        // kindがND_FUNの場合のみ使う(関数名)
     int identLength;    // 上記の長さ   
     int offset;         // kindがND_LVARの場合のみ使う
-    int num_pointers;    // ポインタかどうか(ND_LVARの場合の有効)
+    Type *type;         // 型情報
 } Node;
 
 static inline const char* node_description(Node *node) {
@@ -88,23 +135,38 @@ static inline const char* node_description(Node *node) {
         tmp[n] = '\0';
     }
 
-    sprintf(buffer, "%-8s '%-6s' %3d %2d %14p/%14p/%14p",
+    sprintf(buffer, "%-8s '%-6s' {%-s} %3d %14p/%14p/%14p",
             node_kind_descripion(node->kind),
             tmp,
+            type_description(node->type),
             node->offset,
-            node->num_pointers,
             node->lhs,
             node->rhs,
             node->condition);
     return buffer;
 }
 
-static inline bool node_is_pointer_variable(Node *node) {
-    return node->kind == ND_LVAR && node->num_pointers > 0;
+static inline int node_num_pointers(Node *node) {
+    int n = 0;
+    if (node->kind == ND_LVAR && node->type->type == PTR) {
+        for (Type *t = node->type->ptr_to; t; t = t->ptr_to) {
+            n++;
+        }
+    }
+    return n;
+}
+
+// ポインタとして扱うかどうか
+static inline bool node_is_treat_pointer(Node *node) {
+    if (node->kind == ND_LVAR) {
+        Type *ti = node->type;
+        return ti->type == PTR || ti->type == ARRAY;
+    }
+    return false;
 }
 
 static inline bool node_is_pointer_variable_many(Node *node) {
-    return node->kind == ND_LVAR && node->num_pointers > 1;
+    return node_num_pointers(node) > 1;
 }
 
 // トークンの種類
