@@ -477,7 +477,7 @@ Node *indexing() {
     Node *node = mul(); // 1
 
     for (;;) {
-        // TODO: '[]' で囲まれたものがあるなら配列添え字とみなす
+        // '[]' で囲まれたものがあるなら配列添え字とみなす
         // `x[y]`は`*(x+y)`と等価であるものとして定義する
         if (consume("[")) {
             Node *index_node = expr();
