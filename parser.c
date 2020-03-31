@@ -98,22 +98,6 @@ Node *reference_local_var(Token* t) {
     node->ident = local->name;
     node->identLength = local->len;
     node->type = local->type;
-#if 0
-    // TODO: '[]' で囲まれたものがあるなら配列添え字とみなす
-    // `x[y]`は`*(x+y)`と等価であるものとして定義する
-    if (consume("[")) {
-        Node *index_node = expr();
-        if (!index_node) {
-            error_exit("配列の添え字指定がありません: %s\n", t->str);
-        }
-        if (consume("]")) {
-            Node *add_node = new_node(ND_ADD, node, index_node);
-            node = new_node(ND_DEREF, NULL, add_node);
-        } else {
-            error_exit("配列の添え字指定が間違っています: %s\n", t->str);
-        }
-    }
-#endif
     return node;
 }
 
