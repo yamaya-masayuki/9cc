@@ -11,6 +11,12 @@ extern void vec_push(Vector *v, void *elem);
 extern void vec_pushi(Vector *v, int val);
 extern void *vec_pop(Vector *v);
 extern void *vec_last(Vector *v);
+extern void *vec_get(Vector *v, int i);
 extern bool vec_contains(Vector *v, void *elem);
 extern bool vec_union1(Vector *v, void *elem);
 extern bool vec_empty(Vector *v);
+
+static inline int vec_size(Vector *v)
+{
+    return v->len;
+}

@@ -334,11 +334,14 @@ Node *define_function(Token *indentifier) {
     if (!indentifier) {
         return NULL;
     }
-    // `(`を先読みしてあれば関数定義ノードを作成する
+    // `(`を先読みして、なければグローバル変数とみなす
     Token* open_paren = equal(indentifier->next, TK_RESERVED, "(");
     if (!open_paren) {
+        // グローバル変数の定義
         return NULL;
     }
+
+    // あれば関数定義ノードを作成する
     // 引数のパース
     Token *close_paren = NULL;
     Vector *args = new_vec();

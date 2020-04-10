@@ -246,5 +246,10 @@ int main() {
 	return 1[a];
 }
 '
-
+try 0 '
+int global;
+int main() {
+	return global;
+}
+'
 echo DONE

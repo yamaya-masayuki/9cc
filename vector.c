@@ -34,6 +34,12 @@ void *vec_last(Vector *v) {
 	return v->data[v->len - 1];
 }
 
+void *vec_get(Vector *v, int i)
+{
+    assert(0 <= i && i < v->len);
+	return v->data[i];
+}
+
 bool vec_contains(Vector *v, void *elem) {
 	for (int i = 0; i < v->len; i++)
 		if (v->data[i] == elem)
