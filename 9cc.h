@@ -32,6 +32,14 @@ static inline const char* type_description(Type *type) {
     return buffer;
 }
 
+static inline bool type_equal(Type *lhs, Type *rhs) {
+    if (lhs == rhs) return true;
+    if (!(lhs && rhs)) return false;
+    return lhs->type == rhs->type &&
+           lhs->num_elements == rhs->num_elements &&
+           type_equal(lhs->ptr_to, rhs->ptr_to);
+}
+
 static inline Type* new_type(enum TypeKind tk) {
     Type* type = calloc(1, sizeof(Type));
     type->type = tk;
@@ -70,6 +78,7 @@ typedef enum {
     ND_WHILE, // while
     ND_FOR, // for
     ND_LVAR,    // ローカル変数
+    ND_GLOBAL_VAR,    // グローバル変数
     ND_BLOCK,    // ブロック
     ND_FUN, // 関数
     ND_FUN_IMPL, // 関数定義
@@ -95,6 +104,7 @@ static inline const char* node_kind_descripion(NodeKind kind) {
         "WHILE", // while
         "FOR", // for
         "LVAR",    // ローカル変数
+        "GLOBAL_VAR",    // グローバル変数
         "BLOCK",    // ブロック
         "FUN", // 関数
         "FUN_IMPL", // 関数定義

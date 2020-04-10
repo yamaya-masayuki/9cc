@@ -26,6 +26,16 @@ LVar *find_lvar(Token *token) {
     return NULL;
 }
 
+// グローバル変数の情報
+struct GlobalVar {
+    char *name;	        // 変数の名前(NULL終端)
+    Type *type_info;    // 型情報
+};
+typedef struct GlobalVar GlobalVar;
+
+// グローバル変数のマップ
+Map *global_variable_map;
+
 // 現在着目しているトークン
 Token *token;
 
@@ -102,9 +112,11 @@ Node *reference_local_var(Token* t) {
 }
 
 /**
- * ローカル変数の定義
+ * 型の宣言部分をパースしてType構造体を返す
  */
-Node *define_local_var() {
+Type *declaration_type(Token **out_token) {
+    assert(out_token);
+
     // まずINT型の型情報を作る
     Type* type_original = new_type(INT);
 
@@ -116,14 +128,12 @@ Node *define_local_var() {
     }
 
     // 識別子
-    Token *ident_token = consume_ident();
-    if (!ident_token) {
-        error_exit("識別子がありません: %s\n", token_description(token));
-    }
-
-    // 重複定義のチェック
-    if (find_lvar(ident_token)) {
-        error_exit("同名の変数が定義されています: %s\n", ident_token->str);
+    if (*out_token == NULL) {
+        Token *ident_token = consume_ident();
+        if (!ident_token) {
+            error_exit("識別子がありません: %s\n", token_description(token));
+        }
+        *out_token = ident_token;
     }
 
     // 配列かどうか
@@ -140,12 +150,28 @@ Node *define_local_var() {
         type_current = new_array_type(n, type_current);
     }
 
+    return type_current;
+}
+
+/**
+ * ローカル変数の定義
+ */
+Node *define_local_var() {
+    // 型をパースする
+    Token *identifier_token = NULL;
+    Type *type_info = declaration_type(&identifier_token);
+
+    // ローカル変数の重複定義のチェック
+    if (find_lvar(identifier_token)) {
+        error_exit("同名の変数が定義されています: %s\n", identifier_token->str);
+    }
+
     // LVarの生成
     LVar *var = calloc(1, sizeof(LVar));
     var->next = locals;
-    var->name = ident_token->str;
-    var->len = ident_token->len;
-    var->type = type_current;
+    var->name = identifier_token->str;
+    var->len = identifier_token->len;
+    var->type = type_info;
     if (locals) { // オフセット計算
         var->offset = locals->offset;
         if (var->type->type == ARRAY) {
@@ -162,8 +188,47 @@ Node *define_local_var() {
     node->offset = var->offset;
     node->ident = var->name;
     node->identLength = var->len;
-    node->type = type_current;
+    node->type = type_info;
 
+    return node;
+}
+
+/**
+ * グローバル変数の定義
+ */
+Node *define_global_variable(Token *indentifier) {
+    // 型をパースする
+    Type *type_info = declaration_type(&indentifier);
+
+    // 変数名を確保する
+    char *name = malloc(indentifier->len + 1);
+    memcpy(name, indentifier->str, indentifier->len);
+    name[indentifier->len] = '\0';
+
+    // マップに格納済か？
+    GlobalVar *var = (GlobalVar *)map_lookup(global_variable_map, name);
+    if (var) {
+        // 型が違った場合はコンパイルエラーに倒す
+        if (!type_equal(var->type_info, type_info)) {
+            error_exit("型が衝突しています: %s", indentifier);
+        }
+    } else {
+        // なければマップにいれる
+        var = calloc(1, sizeof(GlobalVar));
+        var->name = name;
+        var->type_info = type_info;
+        map_insert(global_variable_map, name, var);
+    }
+
+    // Nodeの生成
+    Node *node = new_node(ND_GLOBAL_VAR, NULL, NULL);
+    node->ident = name;
+    node->identLength = indentifier->len;
+    node->type = type_info;
+
+    if (!consume(";")) {
+        error_exit("';'ではないトークンです: %s", token_description(token));
+    }
     return node;
 }
 
@@ -338,7 +403,7 @@ Node *define_function(Token *indentifier) {
     Token* open_paren = equal(indentifier->next, TK_RESERVED, "(");
     if (!open_paren) {
         // グローバル変数の定義
-        return NULL;
+        return define_global_variable(indentifier);
     }
 
     // あれば関数定義ノードを作成する
@@ -598,6 +663,7 @@ int is_alnum(char c) {
 
 // 入力文字列pをトークナイズしてそれを返す
 Token* tokenize(char *p) {
+    global_variable_map = new_map();
     Token head;
     head.next = NULL;
     Token *cur = &head;
