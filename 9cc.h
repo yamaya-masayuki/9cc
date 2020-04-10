@@ -264,9 +264,8 @@ static inline char *token_name_copy(Token *token) {
     char *name = NULL;
     if (token) {
         // 変数名を確保する
-        char *name = malloc(token->len + 1);
+        name = calloc(1, token->len + 1);
         memcpy(name, token->str, token->len);
-        name[token->len] = '\0';
     }
     return name;
 }
@@ -295,3 +294,6 @@ extern Node *code[];
 
 #define D_TOKEN(t) \
     do { D(#t "=%s", token_description(t)); fflush(stderr); } while (0)
+
+#define D_TYPE(t) \
+    do { D(#t "=%s", type_description(t)); fflush(stderr); } while (0)

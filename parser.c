@@ -114,19 +114,20 @@ Node *reference_local_var(Token* t) {
 Node *reference_global_variable(Token* t) {
     Node *node = NULL;
     char *name = token_name_copy(t);
-    GlobalVar *var = (GlobalVar *)map_lookup(global_variable_map, name);
-    if (var) {
+    KeyValue *kv = map_lookup(global_variable_map, name);
+    if (kv) {
+        GlobalVar* var = (GlobalVar *)kv_value(kv);
         node = new_node(ND_GLOBAL_VAR, NULL, NULL);
         node->ident = var->name;
         node->identLength = strlen(var->name);
         node->type = var->type_info;
     }
-    free(name);
-    return NULL;
+    return node;
 }
 
 Node *reference_variable(Token *t) {
     Node *node = reference_local_var(t);
+    D_NODE(node);
     if (!node) {
         node = reference_global_variable(t);
     }
@@ -227,12 +228,12 @@ Node *define_global_variable(Token *identifier) {
 
     // 変数名を確保する
     char *name = token_name_copy(identifier);
-    memcpy(name, identifier->str, identifier->len);
-    name[identifier->len] = '\0';
 
     // マップに格納済か？
-    GlobalVar *var = (GlobalVar *)map_lookup(global_variable_map, name);
-    if (var) {
+    GlobalVar *var = NULL;
+    KeyValue *kv = map_lookup(global_variable_map, name);
+    if (kv) {
+        var = (GlobalVar *)kv_value(kv);
         // 型が違った場合はコンパイルエラーに倒す
         if (!type_equal(var->type_info, type_info)) {
             error_exit("型が衝突しています: %s", identifier);

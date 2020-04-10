@@ -1,5 +1,4 @@
-#include "map.h"
-#include "vector.h"
+#include "9cc.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,6 +33,7 @@ KeyValue *map_lookup(Map *map, const char *key)
 {
     int i;
 
+    D("n:%d, key:%s", map->data->len, key);
     for (i = 0; i < vec_size(map->data); i++) {
         KeyValue *kv = (KeyValue *)vec_get(map->data, i);
         if (strcmp(kv->key, key) == 0) return kv;
