@@ -116,6 +116,9 @@ GenResult gen_impl(Node *node) {
         nested--;
         return GEN_PUSHED_RESULT;
 
+    case ND_GLOBAL_VAR: // TODO
+        return GEN_DONT_PUSHED_RESULT;
+
     case ND_ASSIGN:
         printf("  # Assign {{{\n");
         /*

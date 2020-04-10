@@ -260,6 +260,17 @@ static inline const char *token_description(Token *token) {
     return buffer;
 }
 
+static inline char *token_name_copy(Token *token) {
+    char *name = NULL;
+    if (token) {
+        // 変数名を確保する
+        char *name = malloc(token->len + 1);
+        memcpy(name, token->str, token->len);
+        name[token->len] = '\0';
+    }
+    return name;
+}
+
 typedef enum {
     GEN_PUSHED_RESULT,
     GEN_DONT_PUSHED_RESULT,

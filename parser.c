@@ -100,7 +100,7 @@ Node *expr();
 Node *reference_local_var(Token* t) {
     LVar *local = find_lvar(t);
     if (!local) {
-        error_exit("変数が定義されていません: %s\n", t->str);
+        return NULL;
     }
 
     Node *node = new_node(ND_LVAR, NULL, NULL);
@@ -108,6 +108,31 @@ Node *reference_local_var(Token* t) {
     node->ident = local->name;
     node->identLength = local->len;
     node->type = local->type;
+    return node;
+}
+
+Node *reference_global_variable(Token* t) {
+    Node *node = NULL;
+    char *name = token_name_copy(t);
+    GlobalVar *var = (GlobalVar *)map_lookup(global_variable_map, name);
+    if (var) {
+        node = new_node(ND_GLOBAL_VAR, NULL, NULL);
+        node->ident = var->name;
+        node->identLength = strlen(var->name);
+        node->type = var->type_info;
+    }
+    free(name);
+    return NULL;
+}
+
+Node *reference_variable(Token *t) {
+    Node *node = reference_local_var(t);
+    if (!node) {
+        node = reference_global_variable(t);
+    }
+    if (!node) {
+        error_exit("変数が定義されていません: %s\n", token_description(t));
+    }
     return node;
 }
 
@@ -196,21 +221,21 @@ Node *define_local_var() {
 /**
  * グローバル変数の定義
  */
-Node *define_global_variable(Token *indentifier) {
+Node *define_global_variable(Token *identifier) {
     // 型をパースする
-    Type *type_info = declaration_type(&indentifier);
+    Type *type_info = declaration_type(&identifier);
 
     // 変数名を確保する
-    char *name = malloc(indentifier->len + 1);
-    memcpy(name, indentifier->str, indentifier->len);
-    name[indentifier->len] = '\0';
+    char *name = token_name_copy(identifier);
+    memcpy(name, identifier->str, identifier->len);
+    name[identifier->len] = '\0';
 
     // マップに格納済か？
     GlobalVar *var = (GlobalVar *)map_lookup(global_variable_map, name);
     if (var) {
         // 型が違った場合はコンパイルエラーに倒す
         if (!type_equal(var->type_info, type_info)) {
-            error_exit("型が衝突しています: %s", indentifier);
+            error_exit("型が衝突しています: %s", identifier);
         }
     } else {
         // なければマップにいれる
@@ -223,7 +248,7 @@ Node *define_global_variable(Token *indentifier) {
     // Nodeの生成
     Node *node = new_node(ND_GLOBAL_VAR, NULL, NULL);
     node->ident = name;
-    node->identLength = indentifier->len;
+    node->identLength = identifier->len;
     node->type = type_info;
 
     if (!consume(";")) {
@@ -592,7 +617,7 @@ Node *term() {
         Node *node = calling_function(t);
         if (!node) {
             // ローカル変数 or 配列添え字演算
-            node = reference_local_var(t);
+            node = reference_variable(t);
         }
         return node;
     }
