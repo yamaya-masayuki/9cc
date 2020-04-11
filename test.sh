@@ -246,9 +246,10 @@ try() {
 #	return 1[a];
 #}
 #'
-try 0 '
+try 7 '
 int global;
 int main() {
+	global = 7;
 	return global;
 }
 '

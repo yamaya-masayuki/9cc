@@ -24,6 +24,22 @@ void gen_address_to_local_variable(Node *node) {
     printf("  push rax       # var\n");
 }
 
+/*
+ * グローバル変数の参照
+ */
+void gen_address_to_global_variable(const Node *node) {
+    printf("  mov rax, QWORD PTR [_%s@GOTPCREL + rip]\n", node_name(node));
+    printf("  push rax\n");
+}
+
+/*
+ * グローバル変数への代入
+ */
+void gen_assign_to_global_variable(const Node *node) {
+    printf("  mov DWORD PTR [_%s@GOTPCREL + rip]\n", node_name(node));
+    printf("  push rax\n");
+}
+
 static const char *ArgRegsiters[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 void gen_fun(Node *node) {
@@ -35,7 +51,6 @@ void gen_fun(Node *node) {
         printf("  pop rax\n");
         printf("  mov %s, rax\n", ArgRegsiters[i]);
     }
-
     size_t len = MIN(node->identLength,
                   sizeof(buffer) / sizeof(buffer[0]) - 1);
     memcpy(buffer, node->ident, len);
@@ -99,7 +114,7 @@ GenResult gen_impl(Node *node) {
     case ND_LVAR:
         printf("  # variable {{{ type=%s\n", type_description(node->type));
         /*
-         * 変数の参照
+         * ローカル変数の参照
          * - 左辺の変数のアドレスをスタックに置く ~ gen_address_to_local_variable()
          * - 配列ではない場合に限り...
          *  * スタックをポップする
@@ -115,10 +130,17 @@ GenResult gen_impl(Node *node) {
         printf("  # }}} variable\n");
         nested--;
         return GEN_PUSHED_RESULT;
-
-    case ND_GLOBAL_VAR: // TODO
+    case ND_GLOBAL_DEF:
         return GEN_DONT_PUSHED_RESULT;
-
+    case ND_GLOBAL_REF:
+        gen_address_to_global_variable(node);
+        if (node->type->type != ARRAY) {
+            printf("  pop rax        # global(outside)\n");
+            printf("  mov rax, [rax] # global(outside)\n");
+            printf("  push rax       # global(outside)\n");
+        }
+        nested--;
+        return GEN_PUSHED_RESULT;
     case ND_ASSIGN:
         printf("  # Assign {{{\n");
         /*
@@ -138,6 +160,10 @@ GenResult gen_impl(Node *node) {
         case ND_LVAR:
             // スタックにLHSのアドレスを入れたままにしておく
             gen_address_to_local_variable(node->lhs);
+            break;
+        case ND_GLOBAL_REF:
+            // スタックにLHSのアドレスを入れたままにしておく
+            gen_address_to_global_variable(node->lhs);
             break;
         default:
             error_exit("代入の左辺値は変数またはデリファレンス演算子でなければなりません。%s", node_description(node->lhs));
@@ -346,6 +372,11 @@ GenResult gen_impl(Node *node) {
     printf("  push rax  # gen_impl's LAST\n");
     nested--;
     return GEN_PUSHED_RESULT;
+}
+
+void gen_global_varibale(const Node *node)
+{
+    printf("  .comm _%s, %d\n", node_name(node), type_byte_size(node->type));
 }
 
 GenResult gen(Node *node) {

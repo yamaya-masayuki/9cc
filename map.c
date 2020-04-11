@@ -31,10 +31,7 @@ KeyValue *map_insert(Map *map, const char *key, void *item)
 
 KeyValue *map_lookup(Map *map, const char *key)
 {
-    int i;
-
-    D("n:%d, key:%s", map->data->len, key);
-    for (i = 0; i < vec_size(map->data); i++) {
+    for (int i = 0; i < vec_size(map->data); i++) {
         KeyValue *kv = (KeyValue *)vec_get(map->data, i);
         if (strcmp(kv->key, key) == 0) return kv;
     }

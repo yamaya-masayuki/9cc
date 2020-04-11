@@ -17,9 +17,17 @@ int main(int argc, char **argv) {
 
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
-    printf(".global _main\n");
+    printf(".data\n");
+    for (int i = 0; code[i]; i++) {
+        if (code[i]->kind == ND_GLOBAL_DEF) {
+            gen_global_varibale(code[i]);
+        }
+    }
+    printf("\n");
 
     // 先頭の式から順にコード生成
+    printf(".text\n");
+    printf(".global _main\n");
     for (int i = 0; code[i]; i++) {
         D("%s", node_description(code[i]));
         GenResult result = gen(code[i]);

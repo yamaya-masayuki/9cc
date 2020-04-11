@@ -40,6 +40,52 @@ static inline bool type_equal(Type *lhs, Type *rhs) {
            type_equal(lhs->ptr_to, rhs->ptr_to);
 }
 
+/**
+ * ポインタの数を返す
+ *
+ * \param type_info 型情報
+ * \return ポインタの数。ダブルポインタなら2。
+ */
+static inline int type_number_of_pointers(const Type *type_info) {
+    int n = 0;
+    if (type_info && type_info->type == PTR) {
+        for (Type *t = type_info->ptr_to; t; t = t->ptr_to) {
+            n++;
+        }
+    }
+    return n;
+}
+
+/**
+ * 型のバイトサイズを得る
+ *
+ * \param type_info 型情報
+ * \return バイトサイズ
+ */
+static inline int type_byte_size(const Type *type_info) {
+    switch (type_info->type) {
+    case INT:
+        return 4;
+    case PTR:
+        return 8;
+    case ARRAY:
+        return 4 * type_info->num_elements; // INTしかないので4
+    }
+    assert(false); // ここには来ないはず
+    return 0;
+}
+
+/**
+ * 型がポインタまたは配列かどうか
+ *
+ * \param type_info 型情報
+ * \return ポインタまたは配列なら真
+ */
+static inline bool type_is_pointer_or_array(const Type* type_info) {
+    assert(type_info);
+    return type_info->type == PTR || type_info->type == ARRAY;
+}
+
 static inline Type* new_type(enum TypeKind tk) {
     Type* type = calloc(1, sizeof(Type));
     type->type = tk;
@@ -78,7 +124,8 @@ typedef enum {
     ND_WHILE, // while
     ND_FOR, // for
     ND_LVAR,    // ローカル変数
-    ND_GLOBAL_VAR,    // グローバル変数
+    ND_GLOBAL_DEF,  // グローバル変数宣言
+    ND_GLOBAL_REF,  // グローバル変数参照
     ND_BLOCK,    // ブロック
     ND_FUN, // 関数
     ND_FUN_IMPL, // 関数定義
@@ -104,7 +151,8 @@ static inline const char* node_kind_descripion(NodeKind kind) {
         "WHILE", // while
         "FOR", // for
         "LVAR",    // ローカル変数
-        "GLOBAL_VAR",    // グローバル変数
+        "GLOBAL_DEF",   // グローバル変数
+        "GLOBAL_REF",   // グローバル変数
         "BLOCK",    // ブロック
         "FUN", // 関数
         "FUN_IMPL", // 関数定義
@@ -128,25 +176,38 @@ typedef struct Node {
     Type *type;         // 型情報
 } Node;
 
+static inline const char* node_name_copy(const Node* node, char* buffer, int size) {
+    buffer[0] = '\0';
+    const int n = MIN(size - 1, node->identLength);
+    memcpy(buffer, node->ident, n);
+    buffer[n] = '\0';
+    return buffer;
+}
+
+static inline const char* node_name(const Node* node) {
+    static char buffer[1024];
+
+    node_name_copy(node, buffer, sizeof(buffer));
+    return buffer;
+}
+
 static inline const char* node_description(Node *node) {
     static char buffer[1024];
     static char tmp[1024];
 
     if (!node) {
-        return "null.";
+        return "(nil)";
     }
 
     tmp[0] = '\0';
     if (node->kind == ND_FUN || node->kind == ND_FUN_IMPL || node->kind == ND_LVAR) {
-        const int n = MIN(sizeof(tmp) - 1, node->identLength);
-        memcpy(tmp, node->ident, n);
-        tmp[n] = '\0';
+        node_name_copy(node, tmp, sizeof(tmp));
     } else if (node->kind == ND_NUM) {
         const int n = sprintf(tmp, "num:%d", node->val);
         tmp[n] = '\0';
     }
 
-    sprintf(buffer, "%-8s '%-6s' {%-s} %3d %14p/%14p/%14p",
+    sprintf(buffer, "%-12s '%-6s' {%-s} %3d %14p/%14p/%14p",
             node_kind_descripion(node->kind),
             tmp,
             type_description(node->type),
@@ -158,20 +219,16 @@ static inline const char* node_description(Node *node) {
 }
 
 static inline int node_num_pointers(Node *node) {
-    int n = 0;
-    if (node->kind == ND_LVAR && node->type->type == PTR) {
-        for (Type *t = node->type->ptr_to; t; t = t->ptr_to) {
-            n++;
-        }
+    if (node->kind == ND_LVAR) {
+        return type_number_of_pointers(node->type);
     }
-    return n;
+    return 0;
 }
 
 // ポインタとして扱うかどうか
 static inline bool node_is_treat_pointer(Node *node) {
     if (node->kind == ND_LVAR) {
-        Type *ti = node->type;
-        return ti->type == PTR || ti->type == ARRAY;
+        return type_is_pointer_or_array(node->type);
     }
     return false;
 }
@@ -280,6 +337,7 @@ extern Token *token;
 extern Token *tokenize(char *p);
 extern void error_exit(char *fmt, ...);
 extern void program();
+extern void gen_global_varibale(const Node *node);
 extern GenResult gen(Node *node);
 extern Node *code[];
 

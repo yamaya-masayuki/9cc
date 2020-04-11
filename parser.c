@@ -117,7 +117,7 @@ Node *reference_global_variable(Token* t) {
     KeyValue *kv = map_lookup(global_variable_map, name);
     if (kv) {
         GlobalVar* var = (GlobalVar *)kv_value(kv);
-        node = new_node(ND_GLOBAL_VAR, NULL, NULL);
+        node = new_node(ND_GLOBAL_REF, NULL, NULL);
         node->ident = var->name;
         node->identLength = strlen(var->name);
         node->type = var->type_info;
@@ -127,7 +127,6 @@ Node *reference_global_variable(Token* t) {
 
 Node *reference_variable(Token *t) {
     Node *node = reference_local_var(t);
-    D_NODE(node);
     if (!node) {
         node = reference_global_variable(t);
     }
@@ -247,7 +246,7 @@ Node *define_global_variable(Token *identifier) {
     }
 
     // Nodeの生成
-    Node *node = new_node(ND_GLOBAL_VAR, NULL, NULL);
+    Node *node = new_node(ND_GLOBAL_DEF, NULL, NULL);
     node->ident = name;
     node->identLength = identifier->len;
     node->type = type_info;
