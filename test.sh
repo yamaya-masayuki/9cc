@@ -246,11 +246,13 @@ try() {
 #	return 1[a];
 #}
 #'
-try 7 '
-int global;
+try 21 '
+int global_a;
+int global_b;
 int main() {
-	global = 7;
-	return global;
+	global_a = 3;
+	global_b = 7;
+	return global_a * global_b;
 }
 '
 echo DONE

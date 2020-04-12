@@ -28,16 +28,61 @@ void gen_address_to_local_variable(Node *node) {
  * グローバル変数の参照
  */
 void gen_address_to_global_variable(const Node *node) {
-    printf("  mov rax, QWORD PTR [_%s@GOTPCREL + rip]\n", node_name(node));
+    printf("  mov rax, [_%s@GOTPCREL + rip]\n", node_name(node));
     printf("  push rax\n");
 }
 
-/*
- * グローバル変数への代入
- */
-void gen_assign_to_global_variable(const Node *node) {
-    printf("  mov DWORD PTR [_%s@GOTPCREL + rip]\n", node_name(node));
-    printf("  push rax\n");
+void gen_push_value_indirected_by_adderss(const Node *node) {
+    if (node->type->type == ARRAY) {
+        return;
+    }
+    printf("  pop rax        # push value\n");
+    printf("  mov rax, [rax] # push value\n");
+    printf("  push rax       # push value\n");
+}
+
+void gen_assign(const Node *node) {
+    printf("  # Assign {{{\n");
+    /*
+     * 変数への代入
+     * - 左辺の変数のアドレスをスタックに置く ~ gen_address_to_local_variable()
+     * - 右辺を評価し結果をスタックに置く ~ gen_impl()
+     * - スタックをポップし右辺値をrbxへ
+     * - スタックをポップし変数アドレスをraxへ
+     * - raxアドレスにrbx値を書く
+     * - rbx値をスタックに置く
+     */
+    switch (node->lhs->kind) {
+    case ND_DEREF:
+        // 直接rhsをコード生成するのがミソ
+        gen_impl(node->lhs->rhs);
+        break;
+    case ND_LVAR:
+        // スタックにLHSのアドレスを入れたままにしておく
+        gen_address_to_local_variable(node->lhs);
+        break;
+    case ND_GLOBAL_REF:
+        gen_address_to_global_variable(node->lhs);
+        break;
+    default:
+        error_exit("代入の左辺値は変数またはデリファレンス演算子でなければなりません。%s", node_description(node->lhs));
+        break;
+    }
+    GenResult result = gen_impl(node->rhs); // スタックに右辺の評価結果が積まれている
+    assert(result == GEN_PUSHED_RESULT); // ここでのgen_implは必ずスタックに結果をプッシュしなければならない
+    printf("  pop rbx        # assign\n"); // 右辺(の結果)
+    printf("  pop rax        # assign\n"); // 左辺(のアドレス)
+
+    // 左辺(のアドレス)に右辺の値をいれる
+    if (node->lhs->kind == ND_GLOBAL_REF) {
+        printf("  mov DWORD PTR [rax], ebx # assign\n");
+    } else {
+        printf("  mov [rax], rbx # assign\n");
+    }
+
+    printf("  push rbx       # assign\n"); // 右辺の値をスタックに積む
+
+    printf("  # }}} Assign\n");
 }
 
 static const char *ArgRegsiters[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
@@ -122,60 +167,19 @@ GenResult gen_impl(Node *node) {
          *  - 配列は"初期化済のポインタ変数"なので特別扱いする
          */
         gen_address_to_local_variable(node);
-        if (node->type->type != ARRAY) {
-            printf("  pop rax        # var(outside)\n");
-            printf("  mov rax, [rax] # var(outside)\n");
-            printf("  push rax       # var(outside)\n");
-        }
+        gen_push_value_indirected_by_adderss(node);
         printf("  # }}} variable\n");
         nested--;
         return GEN_PUSHED_RESULT;
     case ND_GLOBAL_DEF:
-        return GEN_DONT_PUSHED_RESULT;
+        return GEN_DONT_PUSHED_RESULT; // 何もせずreturn
     case ND_GLOBAL_REF:
         gen_address_to_global_variable(node);
-        if (node->type->type != ARRAY) {
-            printf("  pop rax        # global(outside)\n");
-            printf("  mov rax, [rax] # global(outside)\n");
-            printf("  push rax       # global(outside)\n");
-        }
+        gen_push_value_indirected_by_adderss(node);
         nested--;
         return GEN_PUSHED_RESULT;
     case ND_ASSIGN:
-        printf("  # Assign {{{\n");
-        /*
-         * 変数への代入
-         * - 左辺の変数のアドレスをスタックに置く ~ gen_address_to_local_variable()
-         * - 右辺を評価し結果をスタックに置く ~ gen_impl()
-         * - スタックをポップし右辺値をrbxへ
-         * - スタックをポップし変数アドレスをraxへ
-         * - raxアドレスにrbx値を書く
-         * - rbx値をスタックに置く
-         */
-        switch (node->lhs->kind) {
-        case ND_DEREF:
-            // 直接rhsをコード生成するのがミソ
-            gen_impl(node->lhs->rhs);
-            break;
-        case ND_LVAR:
-            // スタックにLHSのアドレスを入れたままにしておく
-            gen_address_to_local_variable(node->lhs);
-            break;
-        case ND_GLOBAL_REF:
-            // スタックにLHSのアドレスを入れたままにしておく
-            gen_address_to_global_variable(node->lhs);
-            break;
-        default:
-            error_exit("代入の左辺値は変数またはデリファレンス演算子でなければなりません。%s", node_description(node->lhs));
-            break;
-        }
-        result = gen_impl(node->rhs); // スタックに右辺の評価結果が積まれている
-        assert(result == GEN_PUSHED_RESULT); // ここでのgen_implは必ずスタックに結果をプッシュしなければならない
-        printf("  pop rbx        # assign\n"); // 右辺(の結果)
-        printf("  pop rax        # assign\n"); // 左辺(のアドレス)
-        printf("  mov [rax], rbx # assign\n"); // 左辺(のアドレス)に右辺の値をいれる
-        printf("  push rbx       # assign\n"); // 右辺の値をスタックに積む
-        printf("  # }}} Assign\n");
+        gen_assign(node);
         nested--;
         return GEN_PUSHED_RESULT;
 
