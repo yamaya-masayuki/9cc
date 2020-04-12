@@ -297,16 +297,16 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 }
 
 // 前方宣言
-Node *indexing();
+Node *mul();
 
 Node *add() {
-    Node *node = indexing();
+    Node *node = mul();
 
     for (;;) {
         if (consume("+"))
-            node = new_node(ND_ADD, node, indexing());
+            node = new_node(ND_ADD, node, mul());
         else if (consume("-"))
-            node = new_node(ND_SUB, node, indexing());
+            node = new_node(ND_SUB, node, mul());
         else
             return node;
     }
@@ -567,7 +567,7 @@ Node *pointer();
 Node *mul();
 
 Node *indexing() {
-    Node *node = mul(); // 1
+    Node *node = unary();
 
     for (;;) {
         // '[]' で囲まれたものがあるなら配列添え字とみなす
@@ -580,23 +580,22 @@ Node *indexing() {
             if (consume("]")) {
                 Node *add_node = new_node(ND_ADD, node, index_node);
                 return new_node(ND_DEREF, NULL, add_node);
-            } else {
-                error_exit("配列の添え字指定が間違っています: %s\n", token->str);
             }
-        }
-        else
+            error_exit("配列の添え字指定が間違っています: %s\n", token->str);
+        } else {
             return node;
+        }
     }
 }
 
 Node *mul() {
-    Node *node = unary();
+    Node *node = indexing();
 
     for (;;) {
         if (consume("*"))
-            node = new_node(ND_MUL, node, unary());
+            node = new_node(ND_MUL, node, indexing());
         else if (consume("/"))
-            node = new_node(ND_DIV, node, unary());
+            node = new_node(ND_DIV, node, indexing());
         else
             return node;
     }

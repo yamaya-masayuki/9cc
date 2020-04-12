@@ -22,7 +22,7 @@ static inline const char* type_description(Type *type) {
     static char buffer[1024];
 
     if (!type) {
-        return "null.";
+        return "(nil)";
     }
 
     sprintf(buffer, "%-5s %-14p %d",
@@ -200,10 +200,14 @@ static inline const char* node_description(Node *node) {
     }
 
     tmp[0] = '\0';
-    if (node->kind == ND_FUN || node->kind == ND_FUN_IMPL || node->kind == ND_LVAR) {
+    if (node->kind == ND_FUN ||
+        node->kind == ND_FUN_IMPL ||
+        node->kind == ND_LVAR ||
+        node->kind == ND_GLOBAL_DEF ||
+        node->kind == ND_GLOBAL_REF) {
         node_name_copy(node, tmp, sizeof(tmp));
     } else if (node->kind == ND_NUM) {
-        const int n = sprintf(tmp, "num:%d", node->val);
+        const int n = sprintf(tmp, "%d", node->val);
         tmp[n] = '\0';
     }
 
@@ -303,7 +307,7 @@ static inline const char *token_description(Token *token) {
     static char tmp[1024];
 
     if (!token) {
-        return "null";
+        return "(nil)";
     }
 
     const int n = MIN(sizeof(tmp) - 1, token->len);

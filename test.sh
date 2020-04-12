@@ -63,189 +63,189 @@ try() {
 #try 0 'bar(i, j) { return i * j; }'
 #
 # ここから
-#try 7 '
-#int fun() {
-#	return 7;
-#}
-#int main() {
-#	int i;
-#	i = fun();
-#	return i;
-#}
-#'
-#try 3 '
-#int fun() {
-#	return 1 + 1;
-#}
-#int main() {
-#	return fun() + 1;
-#}
-#'
-#try 12 '
-#int fun(int i) {
-#	return i + 3;
-#}
-#int main() {
-#	return fun(9);
-#}
-#'
-#try 55 '
-#int fib(int i) {
-#	if (i < 2) {
-#		return i;
-#	} else {
-#		int j;
-#		j	= i - 2;
-#		int k;
-#		k = i - 1;
-#		return fib(j) + fib(k);
-#	}
-#}
-#int main() {
-#	return fib(10);
-#}
-#'
-#try 28 '
-#int main() {
-#	int i;
-#	i = 28;
-#	int a;
-#	a = &i;
-#	return *a;
-#}
-#'
-#try 111 '
-#int fun(int a, int b, int c) {
-#	return a + b + 1;
-#}
-#int main() {
-#	return fun(10, 100);
-#}
-#'
-#try 3 '
-#int main() {
-#	int x;
-#	int *y;
-#	int **z;
-#	y = &x;
-#	z = &y;
-#	**z = 3;
-#	return x;
-#}
-#'
-#try 8 '
-#int main() {
-#	int *p;
-#	alloc4(&p, 1, 2, 4, 8);
-#	int *q;
-#	q = 3 + p;
-#	return *q;
-#}
-#'
-#try 2 '
-#int main() {
-#	int *p;
-#	alloc4(&p, 1, 2, 4, 8);
-#	int *q;
-#	q = p + 3;
-#	q = q - 2;
-#	return *q;
-#}
-#'
-#try 9 '
-#int main() {
-#	int x;
-#	int y;
-#	int z;
-#	int **p;
-#	int **q;
-#	int *r;
-#
-#	x = 3;
-#	y = 6;
-#	z = 9;
-#	alloc_ptr3(&p, &x, &y, &z);
-#
-#	q = p + 2;
-#	r = *q;
-#	return *r;
-#}
-#'
-#try 4 '
-#int main() {
-#	int i;
-#	return sizeof(i);
-#}
-#'
-#try 4 '
-#int main() {
-#	int i;
-#	return sizeof(i + 3);
-#}
-#'
-#try 8 '
-#int main() {
-#	int *i;
-#	return sizeof(i);
-#}
-#'
-#try 8 '
-#int main() {
-#	int *i;
-#	return sizeof(i + 3);
-#}
-#'
-#try 4 '
-#int main() {
-#	int *i;
-#	return sizeof(*i);
-#}
-#'
-#try 4 '
-#int main() {
-#	return sizeof 1;
-#}
-#'
-#try 4 '
-#int main() {
-#	return sizeof(sizeof(1));
-#}
-#'
-#try 0 '
-#int main() {
-#	int a[10];
-#	return 0;
-#}
-#'
-#try 3 '
-#int main() {
-#	int a[2];
-#	int *p;
-#
-#	*a = 1;
-#	*(a + 1) = 2;
-#	p = a;
-#	return *p + *(p + 1);
-#}
-#'
-#try 3 '
-#int main() {
-#	int a[2];
-#
-#	a[0] = 1;
-#	a[1] = 2;
-#	return a[0] + a[1];
-#}
-#'
-#try 7 '
-#int main() {
-#	int a[2];
-#
-#	a[0] = 9;
-#	a[1] = 7;
-#	return 1[a];
-#}
-#'
+try 7 '
+int fun() {
+	return 7;
+}
+int main() {
+	int i;
+	i = fun();
+	return i;
+}
+'
+try 3 '
+int fun() {
+	return 1 + 1;
+}
+int main() {
+	return fun() + 1;
+}
+'
+try 12 '
+int fun(int i) {
+	return i + 3;
+}
+int main() {
+	return fun(9);
+}
+'
+try 55 '
+int fib(int i) {
+	if (i < 2) {
+		return i;
+	} else {
+		int j;
+		j	= i - 2;
+		int k;
+		k = i - 1;
+		return fib(j) + fib(k);
+	}
+}
+int main() {
+	return fib(10);
+}
+'
+try 28 '
+int main() {
+	int i;
+	i = 28;
+	int a;
+	a = &i;
+	return *a;
+}
+'
+try 111 '
+int fun(int a, int b, int c) {
+	return a + b + 1;
+}
+int main() {
+	return fun(10, 100);
+}
+'
+try 3 '
+int main() {
+	int x;
+	int *y;
+	int **z;
+	y = &x;
+	z = &y;
+	**z = 3;
+	return x;
+}
+'
+try 8 '
+int main() {
+	int *p;
+	alloc4(&p, 1, 2, 4, 8);
+	int *q;
+	q = 3 + p;
+	return *q;
+}
+'
+try 2 '
+int main() {
+	int *p;
+	alloc4(&p, 1, 2, 4, 8);
+	int *q;
+	q = p + 3;
+	q = q - 2;
+	return *q;
+}
+'
+try 9 '
+int main() {
+	int x;
+	int y;
+	int z;
+	int **p;
+	int **q;
+	int *r;
+
+	x = 3;
+	y = 6;
+	z = 9;
+	alloc_ptr3(&p, &x, &y, &z);
+
+	q = p + 2;
+	r = *q;
+	return *r;
+}
+'
+try 4 '
+int main() {
+	int i;
+	return sizeof(i);
+}
+'
+try 4 '
+int main() {
+	int i;
+	return sizeof(i + 3);
+}
+'
+try 8 '
+int main() {
+	int *i;
+	return sizeof(i);
+}
+'
+try 8 '
+int main() {
+	int *i;
+	return sizeof(i + 3);
+}
+'
+try 4 '
+int main() {
+	int *i;
+	return sizeof(*i);
+}
+'
+try 4 '
+int main() {
+	return sizeof 1;
+}
+'
+try 4 '
+int main() {
+	return sizeof(sizeof(1));
+}
+'
+try 0 '
+int main() {
+	int a[10];
+	return 0;
+}
+'
+try 3 '
+int main() {
+	int a[2];
+	int *p;
+
+	*a = 1;
+	*(a + 1) = 2;
+	p = a;
+	return *p + *(p + 1);
+}
+'
+try 3 '
+int main() {
+	int a[2];
+
+	a[0] = 1;
+	a[1] = 2;
+	return a[0] + a[1];
+}
+'
+try 7 '
+int main() {
+	int a[2];
+
+	a[0] = 9;
+	a[1] = 7;
+	return 1[a];
+}
+'
 try 21 '
 int global_a;
 int global_b;
@@ -253,6 +253,23 @@ int main() {
 	global_a = 3;
 	global_b = 7;
 	return global_a * global_b;
+}
+'
+try 10 '
+int global;
+int main() {
+	global = 3;
+	int local;
+	local = 7;
+	return global + local;
+}
+'
+try 6 '
+int global[2];
+int main() {
+	global[0] = 2;
+	global[1] = 3;
+	return global[0] * global[1];
 }
 '
 echo DONE
